@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Demo.ViewModels"
+             x:Class="Demo.Views.AboutView"
+             x:DataType="vm:AboutViewModel">
+    <StackPanel Margin="20" Spacing="10">
+        <TextBlock Text="About" FontSize="24" FontWeight="Bold"/>
+        <Button Content="请求确认（Interaction）" Command="{Binding AskConfirm}" Width="200" HorizontalAlignment="Left"/>
+        <ItemsControl ItemsSource="{Binding Log}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}"/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
+</UserControl>

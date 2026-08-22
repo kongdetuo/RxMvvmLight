@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Demo/Demo.csproj" Id="1eb0f4df-0bc4-4bb6-9d00-070110686581" />
+  <Project Path="RxMvvmLight.Tests/RxMvvmLight.Tests.csproj" />
+  <Project Path="RxMvvmLight/RxMvvmLight.csproj" />
+</Solution>

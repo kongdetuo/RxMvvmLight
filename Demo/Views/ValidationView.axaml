@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Demo.ViewModels"
+             x:Class="Demo.Views.ValidationView"
+             x:DataType="vm:ValidationViewModel">
+    <StackPanel Margin="20" Spacing="12" Width="460" HorizontalAlignment="Left">
+        <TextBlock Text="Validation" FontSize="24" FontWeight="Bold"/>
+        <TextBlock Text="用户名（同步规则：非空 / 3-16 字符）"/>
+        <TextBox Text="{Binding Username, Mode=TwoWay}"/>
+
+        <TextBlock Text="邮箱（防抖 300ms + 异步查重，输入 taken@ 前缀触发占用错误）"/>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBox Text="{Binding Email, Mode=TwoWay}" Width="300"/>
+            <TextBlock Text="检查中…" IsVisible="{Binding IsEmailChecking}" Foreground="Gray" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <Button Content="提交（仅当验证通过）" Command="{Binding Submit}" HorizontalAlignment="Right"/>
+        <TextBlock Text="{Binding Submission}" Foreground="Green"/>
+    </StackPanel>
+</UserControl>

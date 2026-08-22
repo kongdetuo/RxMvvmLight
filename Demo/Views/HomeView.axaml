@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Demo.ViewModels"
+             x:Class="Demo.Views.HomeView"
+             x:DataType="vm:HomeViewModel">
+    <StackPanel Margin="20" Spacing="10">
+        <TextBlock Text="Home" FontSize="24" FontWeight="Bold"/>
+        <TextBox Text="{Binding Greeting}" Width="200" HorizontalAlignment="Left"/>
+        <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="心跳计数（离开本页即停止递增）："/>
+            <TextBlock Text="{Binding Ticks}"/>
+        </StackPanel>
+        <ItemsControl ItemsSource="{Binding Log}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}"/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
+</UserControl>
