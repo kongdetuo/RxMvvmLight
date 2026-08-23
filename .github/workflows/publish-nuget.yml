@@ -1,0 +1,64 @@
+name: Publish NuGet package
+
+on:
+  push:
+    # 仅在打 tag 时发布（推荐）例如 v1.2.3
+    tags:
+      - 'v*'
+  workflow_dispatch:  # 可手动触发
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.0.x'   # 根据你的项目目标修改（例如 7.0.x/6.0.x）
+
+      - name: Get version from tag
+        id: get_version
+        # 当通过 tag 推送时，GITHUB_REF 为 refs/tags/v1.2.3
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+            # 去掉前导 v（如果有）
+            VERSION="${VERSION#v}"
+          else
+            # fallback: 使用日期+短 SHA 或指定默认版本
+            VERSION="0.0.0-${GITHUB_SHA::7}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build (Release)
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Pack project
+        # 指定你的 csproj 路径：如果仓库根目录下只有一个项目可以用 "*.csproj"
+        run: |
+          mkdir -p nupkgs
+          dotnet pack ./RxMvvmLight/RxMvvmLight.csproj \
+            --configuration Release \
+            --no-build \
+            -o nupkgs \
+            /p:PackageVersion=${{ steps.get_version.outputs.version }}
+
+      - name: Publish to nuget.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          echo "Pushing packages from nupkgs/"
+          ls -la nupkgs || true
+          for pkg in nupkgs/*.nupkg; do
+            echo "Pushing $pkg"
+            dotnet nuget push "$pkg" \
+              --api-key "$NUGET_API_KEY" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
