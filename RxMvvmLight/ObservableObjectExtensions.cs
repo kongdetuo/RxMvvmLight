@@ -20,6 +20,7 @@ public static class ObservableObjectExtensions
 
         return vm.Changed.Where(p => p.PropertyName == name).Select(p => (TValue)p.Value!).Prepend(value);
     }
+
     public static Observable<(TValue1, TValue2)> GetObservable<TVM, TValue1, TValue2>(this TVM viewModel,
         TValue1 value1,
         TValue2 value2,
@@ -33,6 +34,22 @@ public static class ObservableObjectExtensions
             GetObservable(viewModel, value2, new Separator(), name2),
             (v1, v2) => ((v1, v2)));
     }
+
+    public static Observable<TReault> GetObservable<TVM, TValue1, TValue2, TReault>(this TVM viewModel,
+        TValue1 value1,
+        TValue2 value2,
+        Func<TValue1, TValue2, TReault> selector,
+        Separator _ = default,
+        [CallerArgumentExpression(nameof(value1))] string name1 = "",
+        [CallerArgumentExpression(nameof(value2))] string name2 = "")
+        where TVM : IObservableObject
+    {
+        return Observable.CombineLatest(
+            GetObservable(viewModel, value1, new Separator(), name1),
+            GetObservable(viewModel, value2, new Separator(), name2),
+            selector);
+    }
+
     public static Observable<(TValue1, TValue2, TValue3)> GetObservable<TVM, TValue1, TValue2, TValue3>(this TVM viewModel,
         TValue1 value1,
         TValue2 value2,
@@ -49,6 +66,25 @@ public static class ObservableObjectExtensions
             GetObservable(viewModel, value3, new Separator(), name3),
             (v1, v2, v3) => ((v1, v2, v3)));
     }
+
+    public static Observable<TResult> GetObservable<TVM, TValue1, TValue2, TValue3, TResult>(this TVM viewModel,
+        TValue1 value1,
+        TValue2 value2,
+        TValue3 value3,
+        Func<TValue1, TValue2, TValue3, TResult> selector,
+        Separator _ = default,
+        [CallerArgumentExpression(nameof(value1))] string name1 = "",
+        [CallerArgumentExpression(nameof(value2))] string name2 = "",
+        [CallerArgumentExpression(nameof(value3))] string name3 = "")
+        where TVM : IObservableObject
+    {
+        return Observable.CombineLatest(
+            GetObservable(viewModel, value1, new Separator(), name1),
+            GetObservable(viewModel, value2, new Separator(), name2),
+            GetObservable(viewModel, value3, new Separator(), name3),
+            selector);
+    }
+
     public static Observable<(TValue1, TValue2, TValue3, TValue4)> GetObservable<TVM, TValue1, TValue2, TValue3, TValue4>(this TVM viewModel,
         TValue1 value1,
         TValue2 value2,
@@ -68,6 +104,28 @@ public static class ObservableObjectExtensions
             GetObservable(viewModel, value4, new Separator(), name4),
             (v1, v2, v3, v4) => ((v1, v2, v3, v4)));
     }
+
+    public static Observable<TResult> GetObservable<TVM, TValue1, TValue2, TValue3, TValue4, TResult>(this TVM viewModel,
+        TValue1 value1,
+        TValue2 value2,
+        TValue3 value3,
+        TValue4 value4,
+        Func<TValue1, TValue2, TValue3, TValue4, TResult> selector,
+        Separator _ = default,
+        [CallerArgumentExpression(nameof(value1))] string name1 = "",
+        [CallerArgumentExpression(nameof(value2))] string name2 = "",
+        [CallerArgumentExpression(nameof(value3))] string name3 = "",
+        [CallerArgumentExpression(nameof(value4))] string name4 = "")
+        where TVM : IObservableObject
+    {
+        return Observable.CombineLatest(
+            GetObservable(viewModel, value1, new Separator(), name1),
+            GetObservable(viewModel, value2, new Separator(), name2),
+            GetObservable(viewModel, value3, new Separator(), name3),
+            GetObservable(viewModel, value4, new Separator(), name4),
+            selector);
+    }
+
     public static Observable<(TValue1, TValue2, TValue3, TValue4, TValue5)> GetObservable<TVM, TValue1, TValue2, TValue3, TValue4, TValue5>(this TVM viewModel,
         TValue1 value1,
         TValue2 value2,
@@ -90,6 +148,31 @@ public static class ObservableObjectExtensions
             GetObservable(viewModel, value5, new Separator(), name5),
             (v1, v2, v3, v4, v5) => ((v1, v2, v3, v4, v5)));
     }
+
+    public static Observable<TResult> GetObservable<TVM, TValue1, TValue2, TValue3, TValue4, TValue5, TResult>(this TVM viewModel,
+        TValue1 value1,
+        TValue2 value2,
+        TValue3 value3,
+        TValue4 value4,
+        TValue5 value5,
+        Func<TValue1, TValue2, TValue3, TValue4, TValue5, TResult> selector,
+        Separator _ = default,
+        [CallerArgumentExpression(nameof(value1))] string name1 = "",
+        [CallerArgumentExpression(nameof(value2))] string name2 = "",
+        [CallerArgumentExpression(nameof(value3))] string name3 = "",
+        [CallerArgumentExpression(nameof(value4))] string name4 = "",
+        [CallerArgumentExpression(nameof(value5))] string name5 = "")
+    where TVM : IObservableObject
+    {
+        return Observable.CombineLatest(
+            GetObservable(viewModel, value1, new Separator(), name1),
+            GetObservable(viewModel, value2, new Separator(), name2),
+            GetObservable(viewModel, value3, new Separator(), name3),
+            GetObservable(viewModel, value4, new Separator(), name4),
+            GetObservable(viewModel, value5, new Separator(), name5),
+            selector);
+    }
+
 
     [Obsolete("做的不好，不要用")]
     public static Observable<TValue?> ObserveChanged<TVM, TValue>(
