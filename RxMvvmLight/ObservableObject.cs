@@ -66,12 +66,16 @@ public class ObservableObject : IObservableObject, INotifyPropertyChanging, INot
 
     protected void OnPropertyChanging<T>(T value, [CallerArgumentExpression(nameof(value))] string propertyName = "")
     {
+        propertyName = propertyName[(propertyName.IndexOf('.') + 1)..].Trim();
+
         changingSubject?.OnNext(new(propertyName, value));
         propertyChangingEventHandler?.Invoke(this, new(propertyName));
     }
 
     protected void OnPropertyChanged<T>(T value, [CallerArgumentExpression(nameof(value))] string propertyName = "")
     {
+        propertyName = propertyName[(propertyName.IndexOf('.') + 1)..].Trim();
+
         changedSubject?.OnNext(new(propertyName, value));
         propertyChangedEventHandler?.Invoke(this, new(propertyName));
     }
