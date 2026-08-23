@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Diagnostics;
 using R3;
 
 namespace RxMvvmLight.Validation;
@@ -11,7 +12,7 @@ public class Validator : IDisposable
 
         public List<string>? Errors;
 
-        public ValidationState State = ValidationState.Valid;
+        public ValidationState State = ValidationState.NotValidated;
 
         public BehaviorSubject<ValidationState>? StateSubject;
     }
@@ -127,6 +128,8 @@ public class Validator : IDisposable
         lock (gate)
         {
             var state = GetOrCreate(propertyName);
+            if (state.State == ValidationState.Validating)
+                return;
             state.State = ValidationState.Validating;
             subject = state.StateSubject;
         }

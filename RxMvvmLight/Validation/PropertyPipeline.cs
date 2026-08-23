@@ -89,11 +89,15 @@ internal sealed class PropertyPipeline<T> : IPropertyPipeline
                 break;
             }
 
-            token.ThrowIfCancellationRequested();
+            if (token.IsCancellationRequested)
+            {
+                break;
+            }
 
             if (rule is DebounceRule<T> debounceRule)
             {
-                await Task.Delay(debounceRule.Duration, token);
+                // 这里不要把token传进去，会变卡
+                await Task.Delay(debounceRule.Duration);
             }
             else if (rule is ConditionalRule<T> conditionalRule)
             {

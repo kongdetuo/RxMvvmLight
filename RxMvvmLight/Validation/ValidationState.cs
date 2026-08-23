@@ -2,7 +2,14 @@ namespace RxMvvmLight;
 
 public enum ValidationState
 {
-    Validating, // 正在评估
+    /// <summary>
+    /// 初始值，尚未验证
+    /// </summary>
+    NotValidated,
+    /// <summary>
+    /// 正在评估
+    /// </summary>
+    Validating,
     Valid,
     Invalid
 }

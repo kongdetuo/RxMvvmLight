@@ -250,9 +250,9 @@ public class ValidationTests
         validator.Validating("Name").Subscribe(v => lastValidating = v);
         validator.Valid("Name").Subscribe(v => lastValid = v);
 
-        Assert.Equal(ValidationState.Valid, lastState);
+        Assert.Equal(ValidationState.NotValidated, lastState);
         Assert.False(lastValidating);
-        Assert.True(lastValid);
+        Assert.False(lastValid);
 
         new PropertyValidationBuilder<string>(validator, "Name", name)
             .Debounce(200)

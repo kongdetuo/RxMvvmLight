@@ -1,12 +1,11 @@
 using Avalonia.Controls;
 
-namespace Demo.Views
+namespace Demo.Views;
+
+public partial class ValidationView : ActivatableView
 {
-    public partial class ValidationView : ActivatableView
+    public ValidationView()
     {
-        public ValidationView()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

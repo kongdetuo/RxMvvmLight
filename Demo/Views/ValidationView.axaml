@@ -3,18 +3,42 @@
              xmlns:vm="using:Demo.ViewModels"
              x:Class="Demo.Views.ValidationView"
              x:DataType="vm:ValidationViewModel">
-    <StackPanel Margin="20" Spacing="12" Width="460" HorizontalAlignment="Left">
-        <TextBlock Text="Validation" FontSize="24" FontWeight="Bold"/>
-        <TextBlock Text="用户名（同步规则：非空 / 3-16 字符）"/>
-        <TextBox Text="{Binding Username, Mode=TwoWay}"/>
+    <StackPanel Margin="20" Spacing="16" Width="500" HorizontalAlignment="Left">
+        <TextBlock Text="验证示例" FontSize="24" FontWeight="Bold"/>
 
-        <TextBlock Text="邮箱（防抖 300ms + 异步查重，输入 taken@ 前缀触发占用错误）"/>
-        <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBox Text="{Binding Email, Mode=TwoWay}" Width="300"/>
-            <TextBlock Text="检查中…" IsVisible="{Binding IsEmailChecking}" Foreground="Gray" VerticalAlignment="Center"/>
+        <!-- 普通检查 -->
+        <StackPanel Spacing="4">
+            <TextBlock Text="① 普通检查（Required + MinLength，实时验证）" FontWeight="SemiBold"/>
+            <TextBox Text="{Binding Name, Mode=TwoWay}"/>
         </StackPanel>
 
-        <Button Content="提交（仅当验证通过）" Command="{Binding Submit}" HorizontalAlignment="Right"/>
-        <TextBlock Text="{Binding Submission}" Foreground="Green"/>
+        <!-- 可空检查 -->
+        <StackPanel Spacing="4">
+            <TextBlock Text="② 可空检查（有值时才验证 最多12个字符）" FontWeight="SemiBold"/>
+            <TextBox Text="{Binding Nickname, Mode=TwoWay}"/>
+        </StackPanel>
+
+        <!-- 条件防抖 -->
+        <StackPanel Spacing="4">
+            <TextBlock Text="③ 条件防抖（输入内容后 300ms 防抖验证邮箱格式）" FontWeight="SemiBold"/>
+            <TextBox Text="{Binding Email, Mode=TwoWay}"/>
+        </StackPanel>
+
+        <!-- 可空条件防抖 + 手动触发 -->
+        <StackPanel Spacing="4">
+            <TextBlock Text="④ 可空 + 非空时校验格式 + 防抖查重 + 手动触发检查" FontWeight="SemiBold"/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBox Text="{Binding Phone, Mode=TwoWay}" Width="280"/>
+                <Button Content="手动验证" Command="{Binding ValidatePhone}" VerticalAlignment="Center"/>
+                <TextBlock Text="检查中…" IsVisible="{Binding IsPhoneChecking}" Foreground="Gray" VerticalAlignment="Center"/>
+            </StackPanel>
+        </StackPanel>
+
+        <Separator/>
+
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Content="提交" Command="{Binding Submit}" HorizontalAlignment="Right"/>
+            <TextBlock Text="{Binding Result}" Foreground="Green" VerticalAlignment="Center"/>
+        </StackPanel>
     </StackPanel>
 </UserControl>
