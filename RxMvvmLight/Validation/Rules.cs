@@ -1,9 +1,9 @@
 namespace RxMvvmLight;
 
-public enum ValidationBehavior
+public enum CascadeMode
 {
-    FailFast,
-    CollectAll
+    Stop,
+    Continue
 }
 
 internal interface IRule<T>

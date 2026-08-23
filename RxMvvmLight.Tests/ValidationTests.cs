@@ -95,33 +95,6 @@ public class ValidationTests
     }
 
     [Fact]
-    public async Task MergeSameProperty_CombinesRules()
-    {
-        var validator = new Validator();
-        var name = new BehaviorSubject<string>("");
-        bool isValid = false;
-        validator.IsValid.Subscribe(v => isValid = v);
-
-        new PropertyValidationBuilder<string>(validator, "Name", name)
-            .Must(n => !string.IsNullOrEmpty(n), "必填")
-            .Subscribe();
-        Assert.Single(validator.GetErrors("Name").Cast<string>());
-
-        new PropertyValidationBuilder<string>(validator, "Name", name)
-            .Must(n => n.Length >= 2, "至少2位")
-            .Subscribe();
-
-        name.OnNext("a");
-        await Task.Delay(50);
-        Assert.Equal(new[] { "至少2位" }, validator.GetErrors("Name").Cast<string>());
-
-        name.OnNext("abc");
-        await Task.Delay(50);
-        Assert.Empty(validator.GetErrors("Name").Cast<string>());
-        Assert.True(isValid);
-    }
-
-    [Fact]
     public async Task CommandComposition_CombineValidAndValidating()
     {
         var validator = new Validator();
@@ -242,10 +215,16 @@ public class ValidationTests
     public async Task PerPropertyState_ReflectsLifecycle()
     {
         var validator = new Validator();
-        var name = new BehaviorSubject<string>("");
+        var name = new Subject<string>();
         ValidationState? lastState = null;
         bool lastValidating = false;
         bool lastValid = false;
+
+        new PropertyValidationBuilder<string>(validator, "Name", name)
+            .Debounce(200)
+            .Must(n => n.Length >= 3, "太短")
+            .Subscribe();
+
         validator.GetState("Name").Subscribe(s => lastState = s);
         validator.Validating("Name").Subscribe(v => lastValidating = v);
         validator.Valid("Name").Subscribe(v => lastValid = v);
@@ -254,11 +233,7 @@ public class ValidationTests
         Assert.False(lastValidating);
         Assert.False(lastValid);
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
-            .Debounce(200)
-            .Must(n => n.Length >= 3, "太短")
-            .Subscribe();
-
+        name.OnNext("");
         await Task.Delay(50);
         Assert.Equal(ValidationState.Validating, lastState);
 
@@ -270,6 +245,66 @@ public class ValidationTests
         Assert.Equal(ValidationState.Valid, lastState);
         Assert.False(lastValidating);
         Assert.True(lastValid);
+    }
+
+    [Fact]
+    public void GetState_ThrowsIfPropertyNotRegistered()
+    {
+        /*
+         * 设计行为：对未注册的属性调用 GetState 应抛出异常
+         */
+        var validator = new Validator();
+        Assert.Throws<InvalidOperationException>(() => validator.GetState("Name"));
+    }
+
+    [Fact]
+    public void GetState_PushesCurrentStateOnSubscribe()
+    {
+        /*
+         * 订阅 GetState 时应立即收到属性当前的状态
+         */
+        var validator = new Validator();
+        var name = new Subject<string>();
+
+        new PropertyValidationBuilder<string>(validator, "Name", name)
+            .Must(n => n.Length >= 3, "太短")
+            .Subscribe();
+
+        ValidationState? lastState = null;
+        validator.GetState("Name").Subscribe(s => lastState = s);
+
+        Assert.Equal(ValidationState.NotValidated, lastState);
+    }
+
+    [Fact]
+    public void Register_ThrowsOnDuplicateProperty()
+    {
+        /*
+         * 同一属性不能注册两次，第二次调用 Register() 应抛出异常
+         */
+        var validator = new Validator();
+        var name = new Subject<string>();
+
+        validator.Register("Name", name, [], CascadeMode.Stop);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            validator.Register("Name", name, [], CascadeMode.Stop));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    [InlineData("\t")]
+    public void Register_ThrowsOnEmptyPropertyName(string propertyName)
+    {
+        /*
+         * 属性名称不能为空或空白
+         */
+        var validator = new Validator();
+        var name = new Subject<string>();
+
+        Assert.ThrowsAny<ArgumentException>(() =>
+            validator.Register(propertyName, name, [], CascadeMode.Stop));
     }
 
     [Fact]
@@ -344,7 +379,7 @@ public class ValidationTests
         var order = new List<int>();
 
         new PropertyValidationBuilder<string>(validator, "Name", name)
-            .Behavior(ValidationBehavior.CollectAll)
+            .CascadeMode(CascadeMode.Continue)
             .Must(_ => { order.Add(1); return false; }, "第一")
             .Must(_ => { order.Add(2); return false; }, "第二")
             .Must(_ => { order.Add(3); return false; }, "第三")
@@ -364,7 +399,7 @@ public class ValidationTests
 
         new PropertyValidationBuilder<string>(validator, "Name", name)
             .Must(_ => false, "失败")
-            .Behavior()
+            .CascadeMode(CascadeMode.Stop)
             .Must(_ => { group2Count++; return true; }, "不应执行")
             .Subscribe();
 
@@ -422,7 +457,7 @@ public class ValidationTests
         var rule2Proceed = new TaskCompletionSource();
 
         new PropertyValidationBuilder<string>(validator, "Name", name)
-            .Behavior(ValidationBehavior.CollectAll)
+            .CascadeMode(CascadeMode.Continue)
             .Must(_ => false, "错误1")
             .RegisterAsyncRule(async _ =>
             {

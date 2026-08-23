@@ -45,7 +45,9 @@ public class Validator : IDisposable
     {
         lock (gate)
         {
-            var state = GetOrCreate(propertyName);
+            if (!properties.TryGetValue(propertyName, out var state))
+                throw new InvalidOperationException(
+                    $"Property '{propertyName}' is not registered.");
             state.StateSubject ??= new BehaviorSubject<ValidationState>(state.State);
             return state.StateSubject;
         }
@@ -73,31 +75,19 @@ public class Validator : IDisposable
         return properties.ContainsKey(propertyName);
     }
 
-    internal PropertyPipeline<T> GetOrCreatePipeline<T>(string propertyName, Observable<T> source)
+    internal void Register<T>(string propertyName, Observable<T> source, List<IRule<T>> rules, CascadeMode cascadeMode)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(propertyName);
+
         lock (gate)
         {
-            var state = GetOrCreate(propertyName);
-            if (state.Pipeline is not null)
-                return (PropertyPipeline<T>)state.Pipeline;
-            var pipeline = new PropertyPipeline<T>(this, propertyName, source);
-            state.Pipeline = pipeline;
-            return pipeline;
+            if (properties.ContainsKey(propertyName))
+                throw new InvalidOperationException(
+                    $"Property '{propertyName}' is already registered. Use When() for conditional rules.");
+            var state = new PropertyState();
+            properties[propertyName] = state;
+            state.Pipeline = new PropertyPipeline<T>(this, propertyName, source, rules, cascadeMode);
         }
-    }
-
-    internal void RemovePipeline(string propertyName)
-    {
-        BehaviorSubject<ValidationState>? subject;
-        lock (gate)
-        {
-            properties.Remove(propertyName, out var state);
-            subject = state?.StateSubject;
-        }
-
-        subject?.OnCompleted();
-        subject?.Dispose();
-        RecomputeGates();
     }
 
     internal void SetState(string propertyName, ValidationState newState)
@@ -105,7 +95,7 @@ public class Validator : IDisposable
         BehaviorSubject<ValidationState>? subject;
         lock (gate)
         {
-            var state = GetOrCreate(propertyName);
+            var state = properties[propertyName];
             state.State = newState;
             subject = state.StateSubject;
         }
@@ -127,7 +117,7 @@ public class Validator : IDisposable
         BehaviorSubject<ValidationState>? subject;
         lock (gate)
         {
-            var state = GetOrCreate(propertyName);
+            var state = properties[propertyName];
             if (state.State == ValidationState.Validating)
                 return;
             state.State = ValidationState.Validating;
@@ -149,7 +139,7 @@ public class Validator : IDisposable
     {
         lock (gate)
         {
-            var state = GetOrCreate(propertyName);
+            var state = properties[propertyName];
             var newList = messages.Count == 0 ? null : messages.ToList();
             state.Errors = newList;
         }
@@ -217,13 +207,4 @@ public class Validator : IDisposable
         }
     }
 
-    private PropertyState GetOrCreate(string propertyName)
-    {
-        if (!properties.TryGetValue(propertyName, out var state))
-        {
-            state = new PropertyState();
-            properties[propertyName] = state;
-        }
-        return state;
-    }
 }

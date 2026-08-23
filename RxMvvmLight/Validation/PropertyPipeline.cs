@@ -13,29 +13,20 @@ internal sealed class PropertyPipeline<T> : IPropertyPipeline
     private readonly Validator validator;
     private readonly object gate = new();
     private readonly Observable<T> source;
-    private readonly List<IRule<T>> allRules = new();
-    private ValidationBehavior behavior = ValidationBehavior.FailFast;
+    private readonly List<IRule<T>> allRules;
+    private CascadeMode cascadeMode;
     private IDisposable? subscription;
 
     public string PropertyName { get; }
 
-    internal PropertyPipeline(Validator validator, string propertyName, Observable<T> source)
+    internal PropertyPipeline(Validator validator, string propertyName, Observable<T> source, List<IRule<T>> rules, CascadeMode cascadeMode)
     {
         this.validator = validator;
         this.PropertyName = propertyName;
         this.source = source;
-    }
-
-    internal void AddRegistration(List<IRule<T>> registrationRules, ValidationBehavior behavior)
-    {
-        lock (gate)
-        {
-            allRules.AddRange(registrationRules);
-            this.behavior = behavior;
-
-            subscription?.Dispose();
-            subscription = BuildSubscription();
-        }
+        this.allRules = rules;
+        this.cascadeMode = cascadeMode;
+        subscription = BuildSubscription();
     }
 
     public void Dispose()
@@ -52,7 +43,7 @@ internal sealed class PropertyPipeline<T> : IPropertyPipeline
     private IDisposable BuildSubscription()
     {
         var rulesSnapshot = allRules.ToArray();
-        var currentBehavior = behavior;
+        var currentBehavior = cascadeMode;
         return source
             .SelectAwait(async (value, ct) =>
             {
@@ -78,13 +69,13 @@ internal sealed class PropertyPipeline<T> : IPropertyPipeline
             });
     }
 
-    private async Task<List<string>> Evaluate(IReadOnlyList<IRule<T>> rules, T value, ValidationBehavior behavior, CancellationToken token)
+    private async Task<List<string>> Evaluate(IReadOnlyList<IRule<T>> rules, T value, CascadeMode mode, CancellationToken token)
     {
         var errors = new List<string>();
         var count = 0;
         foreach (var rule in rules)
         {
-            if(behavior == ValidationBehavior.FailFast && errors.Count > 0)
+            if(mode == CascadeMode.Stop && errors.Count > 0)
             {
                 break;
             }
@@ -103,7 +94,7 @@ internal sealed class PropertyPipeline<T> : IPropertyPipeline
             {
                 if (conditionalRule.Condition(value))
                 {
-                    var innerErrors = await Evaluate(conditionalRule.InnerRules, value, behavior, token);
+                    var innerErrors = await Evaluate(conditionalRule.InnerRules, value, mode, token);
                     errors.AddRange(innerErrors);
                 }
             }

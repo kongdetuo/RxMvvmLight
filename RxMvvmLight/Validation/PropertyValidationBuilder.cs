@@ -9,7 +9,7 @@ public class PropertyValidationBuilder<T>
     private readonly Validator Validator;
     private readonly Observable<T> source;
     private readonly List<IRule<T>> rules = [];
-    private ValidationBehavior behavior = ValidationBehavior.FailFast;
+    private CascadeMode cascadeMode = RxMvvmLight.CascadeMode.Stop;
     private readonly List<Observable<Unit>> dependsOnSource = [];
     public string PropertyName { get; }
 
@@ -20,9 +20,9 @@ public class PropertyValidationBuilder<T>
         this.source = source;
     }
 
-    public PropertyValidationBuilder<T> Behavior(ValidationBehavior behavior = ValidationBehavior.FailFast)
+    public PropertyValidationBuilder<T> CascadeMode(CascadeMode mode)
     {
-        this.behavior = behavior;
+        this.cascadeMode = mode;
         return this;
     }
 
@@ -83,8 +83,7 @@ public class PropertyValidationBuilder<T>
             inputSource = source.CombineLatest(denpend, (x, _) => x);
         }
 
-        var pipeline = Validator.GetOrCreatePipeline(PropertyName, inputSource);
-        pipeline.AddRegistration(rules, behavior);
+        Validator.Register(PropertyName, inputSource, rules, cascadeMode);
     }
 
     private PropertyValidationBuilder<T> AddRule(IRule<T> rule)
