@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace RxMvvmLight;
+namespace RxMvvmLight.Validation;
 
 public static class ValidationOperators
 {

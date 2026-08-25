@@ -7,16 +7,14 @@ namespace RxMvvmLight.Validation;
 
 public interface IValidationObservableObject : IObservableObject, INotifyDataErrorInfo
 {
-    Validator Validator { get; }
+    ReactiveValidator Validator { get; }
 }
 
 public class ValidationObservableObject : ObservableObject, IValidationObservableObject
 {
     private bool errorDisplayActivated = false;
-    private readonly Dictionary<string, List<string>?> lastNotifiedErrors = new();
 
-    public Validator Validator => field ??= new();
-
+    public ReactiveValidator Validator => field ??= new();
 
     public bool HasErrors => errorDisplayActivated && Validator.HasErrors;
 
@@ -26,17 +24,11 @@ public class ValidationObservableObject : ObservableObject, IValidationObservabl
 
     protected ValidationObservableObject()
     {
-        Validator.StateChanged.Subscribe(propertyName =>
+        Validator!.ErrorsChanged.Subscribe(errors =>
         {
-            var currentErrors = Validator.GetErrors(propertyName).Cast<string>().ToList();
-            if (lastNotifiedErrors.TryGetValue(propertyName, out var last) && last.SequenceEqual(currentErrors))
-                return;
-
-            lastNotifiedErrors[propertyName] = currentErrors;
-
             if (this.errorDisplayActivated)
             {
-                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(propertyName));
+                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(errors.PropertyName));
                 OnPropertyChanged(HasErrors);
             }
         });

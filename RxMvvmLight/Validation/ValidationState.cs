@@ -1,4 +1,4 @@
-namespace RxMvvmLight;
+namespace RxMvvmLight.Validation;
 
 public enum ValidationState
 {

@@ -1,19 +1,18 @@
 using R3;
-using RxMvvmLight.Validation;
 using System.Data;
 
-namespace RxMvvmLight;
+namespace RxMvvmLight.Validation;
 
 public class PropertyValidationBuilder<T>
 {
-    private readonly Validator Validator;
+    private readonly ReactiveValidator Validator;
     private readonly Observable<T> source;
     private readonly List<IRule<T>> rules = [];
-    private CascadeMode cascadeMode = RxMvvmLight.CascadeMode.Stop;
+    private CascadeMode cascadeMode = RxMvvmLight.Validation.CascadeMode.Stop;
     private readonly List<Observable<Unit>> dependsOnSource = [];
     public string PropertyName { get; }
 
-    public PropertyValidationBuilder(Validator validator, string propertyName, Observable<T> source)
+    public PropertyValidationBuilder(ReactiveValidator validator, string propertyName, Observable<T> source)
     {
         this.Validator = validator;
         this.PropertyName = Normalize(propertyName);

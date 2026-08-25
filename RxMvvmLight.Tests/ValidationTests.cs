@@ -9,7 +9,7 @@ public class ValidationTests
     [Fact]
     public void SyncRules_UpdateErrorsAndGate()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
         bool isValid = true, isValidating = false;
         validator.IsValid.Subscribe(v => isValid = v);
@@ -34,7 +34,7 @@ public class ValidationTests
     [Fact]
     public async Task Debounce_DefersEvaluation()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var email = new BehaviorSubject<string>("");
         int evalCount = 0;
         bool isValidating = false;
@@ -63,7 +63,7 @@ public class ValidationTests
     [Fact]
     public async Task AsyncRace_StaleResultsAreDropped()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var email = new Subject<string>();
         bool isValid = true;
         validator.IsValid.Subscribe(v => isValid = v);
@@ -97,7 +97,7 @@ public class ValidationTests
     [Fact]
     public async Task CommandComposition_CombineValidAndValidating()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new BehaviorSubject<string>("");
 
         new PropertyValidationBuilder<string>(validator, "Name", name)
@@ -120,7 +120,7 @@ public class ValidationTests
     [Fact]
     public async Task TokenCancellation_CancelsInFlightAsyncRule()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var email = new Subject<string>();
         int canceled = 0;
 
@@ -152,11 +152,11 @@ public class ValidationTests
     [Fact]
     public async Task ErrorsChanged_NotSpammedOnUnchangedErrors()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
         int errorListChanges = 0;
         List<string>? lastErrors = null;
-        validator.StateChanged.Subscribe(_ =>
+        validator.ErrorsChanged.Subscribe(_ =>
         {
             var current = validator.GetErrors("Name").Cast<string>().ToList();
             if (lastErrors == null || !lastErrors.SequenceEqual(current))
@@ -187,7 +187,7 @@ public class ValidationTests
     [Fact]
     public async Task OldError_KeptDuringRevalidation()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
         new PropertyValidationBuilder<string>(validator, "Name", name)
@@ -214,7 +214,7 @@ public class ValidationTests
     [Fact]
     public async Task PerPropertyState_ReflectsLifecycle()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
         ValidationState? lastState = null;
         bool lastValidating = false;
@@ -253,7 +253,7 @@ public class ValidationTests
         /*
          * 设计行为：对未注册的属性调用 GetState 应抛出异常
          */
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         Assert.Throws<InvalidOperationException>(() => validator.GetState("Name"));
     }
 
@@ -263,7 +263,7 @@ public class ValidationTests
         /*
          * 订阅 GetState 时应立即收到属性当前的状态
          */
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
         new PropertyValidationBuilder<string>(validator, "Name", name)
@@ -282,7 +282,7 @@ public class ValidationTests
         /*
          * 同一属性不能注册两次，第二次调用 Register() 应抛出异常
          */
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
         validator.Register("Name", name, [], CascadeMode.Stop);
@@ -300,7 +300,7 @@ public class ValidationTests
         /*
          * 属性名称不能为空或空白
          */
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
         Assert.ThrowsAny<ArgumentException>(() =>
@@ -310,7 +310,7 @@ public class ValidationTests
     [Fact]
     public async Task RuleException_FailsValidation_KeepsPipelineAlive()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
         bool isValid = true;
         validator.IsValid.Subscribe(v => isValid = v);
@@ -338,7 +338,7 @@ public class ValidationTests
     [Fact]
     public void Sequential_Default_StopsOnFirstFailure()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
         int evalCount = 0;
 
@@ -357,7 +357,7 @@ public class ValidationTests
     [Fact]
     public void Sequential_PassesThroughOnSuccess_StopsOnFailure()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
         new PropertyValidationBuilder<string>(validator, "Name", name)
@@ -374,7 +374,7 @@ public class ValidationTests
     [Fact]
     public void SequentialAll_RunsAllRulesInOrder()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
         var order = new List<int>();
 
@@ -393,7 +393,7 @@ public class ValidationTests
     [Fact]
     public void Group_StopsAtNextGroupOnFailure()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
         int group2Count = 0;
 
@@ -411,7 +411,7 @@ public class ValidationTests
     [Fact]
     public async Task Sequential_MixedSyncAsync_StopsOnFirstFailure()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var email = new Subject<string>();
         var order = new List<string>();
 
@@ -429,7 +429,7 @@ public class ValidationTests
     [Fact]
     public async Task Debounce_Cancellation_ResetsOnNewValue()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var email = new Subject<string>();
         int evalCount = 0;
 
@@ -451,7 +451,7 @@ public class ValidationTests
     [Fact]
     public async Task CollectAll_EmitsPartialResults()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
         var rule2Start = new TaskCompletionSource();
         var rule2Proceed = new TaskCompletionSource();
@@ -482,7 +482,7 @@ public class ValidationTests
     [Fact]
     public void Required_NullOrEmpty_FailsValidation()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
         new PropertyValidationBuilder<string>(validator, "Name", name)
@@ -497,7 +497,7 @@ public class ValidationTests
     [Fact]
     public void Required_NonEmpty_PassesValidation()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
         new PropertyValidationBuilder<string>(validator, "Name", name)
@@ -512,7 +512,7 @@ public class ValidationTests
     [Fact]
     public void When_ConditionTrue_RulesExecute()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
         new PropertyValidationBuilder<string>(validator, "Name", name)
@@ -528,7 +528,7 @@ public class ValidationTests
     [Fact]
     public void When_ConditionFalse_RulesSkipped()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
         new PropertyValidationBuilder<string>(validator, "Name", name)
@@ -543,7 +543,7 @@ public class ValidationTests
     [Fact]
     public void When_ChangesCondition_Reevaluates()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
         bool condition = false;
 
@@ -564,7 +564,7 @@ public class ValidationTests
     [Fact]
     public void When_ConsecutiveWhen_NestedConditions()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
         bool conditionA = true;
         bool conditionB = true;
@@ -591,7 +591,7 @@ public class ValidationTests
     [Fact]
     public async Task DependsOn_TriggersReevaluation()
     {
-        var validator = new Validator();
+        var validator = new ReactiveValidator();
         var name = new Subject<string>();
         var refresh = new BehaviorSubject<Unit>(Unit.Default);
 

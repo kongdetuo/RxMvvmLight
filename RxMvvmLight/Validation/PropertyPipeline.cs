@@ -1,7 +1,6 @@
 using R3;
-using RxMvvmLight.Validation;
 
-namespace RxMvvmLight;
+namespace RxMvvmLight.Validation;
 
 internal interface IPropertyPipeline : IDisposable
 {
@@ -10,7 +9,7 @@ internal interface IPropertyPipeline : IDisposable
 
 internal sealed class PropertyPipeline<T> : IPropertyPipeline
 {
-    private readonly Validator validator;
+    private readonly ReactiveValidator validator;
     private readonly object gate = new();
     private readonly Observable<T> source;
     private readonly List<IRule<T>> allRules;
@@ -19,7 +18,7 @@ internal sealed class PropertyPipeline<T> : IPropertyPipeline
 
     public string PropertyName { get; }
 
-    internal PropertyPipeline(Validator validator, string propertyName, Observable<T> source, List<IRule<T>> rules, CascadeMode cascadeMode)
+    internal PropertyPipeline(ReactiveValidator validator, string propertyName, Observable<T> source, List<IRule<T>> rules, CascadeMode cascadeMode)
     {
         this.validator = validator;
         this.PropertyName = propertyName;
@@ -47,7 +46,7 @@ internal sealed class PropertyPipeline<T> : IPropertyPipeline
         return source
             .SelectAwait(async (value, ct) =>
             {
-                validator.BeginEvaluation(PropertyName);
+                validator.SetState(PropertyName, ValidationState.Validating);
                 try
                 {
                     return await Evaluate(rulesSnapshot, value, currentBehavior, ct);

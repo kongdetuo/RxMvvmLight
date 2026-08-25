@@ -1,16 +1,15 @@
 ﻿using System.Collections;
-using System.Diagnostics;
 using R3;
 
 namespace RxMvvmLight.Validation;
 
-public class Validator : IDisposable
+public class ReactiveValidator : IDisposable
 {
     private sealed class PropertyState
     {
         public IPropertyPipeline? Pipeline;
 
-        public List<string>? Errors;
+        public IReadOnlyList<string> Errors = [];
 
         public ValidationState State = ValidationState.NotValidated;
 
@@ -22,9 +21,9 @@ public class Validator : IDisposable
     private readonly Dictionary<string, PropertyState> properties = new(StringComparer.Ordinal);
     private readonly BehaviorSubject<bool> validatingSubject = new(false);
     private readonly BehaviorSubject<bool> validSubject = new(true);
-    private readonly Subject<string> stateChangedSubject = new();
+    private readonly Subject<PropertyErrors> errorsChangedSubject = new();
 
-    public Observable<string> StateChanged => stateChangedSubject;
+    public Observable<PropertyErrors> ErrorsChanged => errorsChangedSubject;
 
     public Observable<bool> IsValidating => validatingSubject;
 
@@ -107,52 +106,42 @@ public class Validator : IDisposable
                 subject.OnNext(newState);
             }
         }
-        RecomputeGates();
-        stateChangedSubject.OnNext(propertyName);
+
+        bool validating, valid;
+        lock (gate)
+        {
+            validating = properties.Values.Any(p => p.State == ValidationState.Validating);
+            valid = properties.Values.All(p => p.State == ValidationState.Valid);
+        }
+
+        lock (notifyGate)
+        {
+            validatingSubject.OnNext(validating);
+            validSubject.OnNext(valid);
+        }
     }
 
-    // 评估开始：State=Validating，直至结果落定
-    internal void BeginEvaluation(string propertyName)
+    internal void SetErrors(string propertyName, IReadOnlyList<string> errors)
     {
-        BehaviorSubject<ValidationState>? subject;
+        errors = errors.ToList();
+
         lock (gate)
         {
             var state = properties[propertyName];
-            if (state.State == ValidationState.Validating)
+            if (errors.SequenceEqual(state.Errors))
                 return;
-            state.State = ValidationState.Validating;
-            subject = state.StateSubject;
+            state.Errors = errors;
         }
 
-        if (subject is not null)
-        {
-            lock (notifyGate)
-            {
-                subject.OnNext(ValidationState.Validating);
-            }
-        }
-        RecomputeGates();
-        stateChangedSubject.OnNext(propertyName);
-    }
-
-    internal void SetErrors(string propertyName, IReadOnlyCollection<string> messages)
-    {
-        lock (gate)
-        {
-            var state = properties[propertyName];
-            var newList = messages.Count == 0 ? null : messages.ToList();
-            state.Errors = newList;
-        }
-
-        stateChangedSubject.OnNext(propertyName);
+        errorsChangedSubject.OnNext(new(propertyName, errors));
     }
 
     public IEnumerable GetErrors(string? propertyName)
     {
         lock (gate)
         {
-            if (propertyName is not null && properties.TryGetValue(propertyName, out var state) && state.Errors is { Count: > 0 } list)
-                return list.ToArray();
+            if (propertyName is not null && properties.TryGetValue(propertyName, out var state))
+                return state.Errors;
             return Array.Empty<string>();
         }
     }
@@ -188,23 +177,8 @@ public class Validator : IDisposable
         validSubject.Dispose();
         foreach (var subject in subjects)
             subject.Dispose();
-        stateChangedSubject.Dispose();
+        errorsChangedSubject.Dispose();
     }
-
-    private void RecomputeGates()
-    {
-        bool validating, valid;
-        lock (gate)
-        {
-            validating = properties.Values.Any(p => p.State == ValidationState.Validating);
-            valid = properties.Values.All(p => p.State == ValidationState.Valid);
-        }
-
-        lock (notifyGate)
-        {
-            validatingSubject.OnNext(validating);
-            validSubject.OnNext(valid);
-        }
-    }
-
 }
+
+public record struct PropertyErrors(string PropertyName, IReadOnlyList<string> Errors);
