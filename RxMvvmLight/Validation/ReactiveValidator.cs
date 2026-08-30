@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using R3;
+using RxMvvmLight.Validation.Helpers;
 
 namespace RxMvvmLight.Validation;
 
@@ -14,6 +15,15 @@ public class ReactiveValidator : IDisposable
         public ValidationState State = ValidationState.NotValidated;
 
         public BehaviorSubject<ValidationState>? StateSubject;
+
+        public IReadOnlyList<Func<string>> ErrorProviders { get; internal set; } = [];
+    }
+
+    private static readonly WeakReferenceList<ReactiveValidator> allValidator = new();
+
+    public ReactiveValidator()
+    {
+        allValidator.Add(this);
     }
 
     private readonly Lock gate = new();
@@ -121,19 +131,20 @@ public class ReactiveValidator : IDisposable
         }
     }
 
-    internal void SetErrors(string propertyName, IReadOnlyList<string> errors)
+    internal void SetErrors(string propertyName, IReadOnlyList<Func<string>> errors)
     {
-        errors = errors.ToList();
+        var newErrors = errors.Select(p=>p()).ToList();
 
         lock (gate)
         {
             var state = properties[propertyName];
-            if (errors.SequenceEqual(state.Errors))
+            if (newErrors.SequenceEqual(state.Errors))
                 return;
-            state.Errors = errors;
+            state.ErrorProviders = errors;
+            state.Errors = newErrors;
         }
 
-        errorsChangedSubject.OnNext(new(propertyName, errors));
+        errorsChangedSubject.OnNext(new(propertyName, newErrors));
     }
 
     public IEnumerable GetErrors(string? propertyName)
@@ -143,6 +154,38 @@ public class ReactiveValidator : IDisposable
             if (propertyName is not null && properties.TryGetValue(propertyName, out var state))
                 return state.Errors;
             return Array.Empty<string>();
+        }
+    }
+
+    public void RefreshMessage()
+    {
+        List<PropertyErrors> propertyErrors = [];
+        lock (gate)
+        {
+            foreach (var item in properties.Values)
+            {
+                if(item.Errors.Count > 0)
+                {
+                    var errors = item.ErrorProviders.Select(p => p()).ToArray();
+                    if (!errors.SequenceEqual(item.Errors))
+                    {
+                        item.Errors = errors;
+                        propertyErrors.Add(new PropertyErrors(item.Pipeline.PropertyName, item.Errors));
+                    }
+                }
+            }
+        }
+        foreach (var item in propertyErrors)
+        {
+            errorsChangedSubject.OnNext(item);
+        }
+    }
+
+    public static void RefreshAllMessage()
+    {
+        foreach (var item in allValidator.GetLiveItems())
+        {
+            item.RefreshMessage();
         }
     }
 
@@ -179,6 +222,8 @@ public class ReactiveValidator : IDisposable
             subject.Dispose();
         errorsChangedSubject.Dispose();
     }
+
+
 }
 
 public record struct PropertyErrors(string PropertyName, IReadOnlyList<string> Errors);

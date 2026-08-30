@@ -55,10 +55,10 @@ internal sealed class PropertyPipeline<T> : IPropertyPipeline
                 {
                     throw;
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     ObservableSystem.GetUnhandledExceptionHandler().Invoke(ex);
-                    return new List<string> { ex.Message };
+                    return [() => ex.Message];
                 }
             }, AwaitOperation.Switch)
             .Subscribe(errors =>
@@ -68,13 +68,13 @@ internal sealed class PropertyPipeline<T> : IPropertyPipeline
             });
     }
 
-    private async Task<List<string>> Evaluate(IReadOnlyList<IRule<T>> rules, T value, CascadeMode mode, CancellationToken token)
+    private async Task<List<Func<string>>> Evaluate(IReadOnlyList<IRule<T>> rules, T value, CascadeMode mode, CancellationToken token)
     {
-        var errors = new List<string>();
+        var errors = new List<Func<string>>();
         var count = 0;
         foreach (var rule in rules)
         {
-            if(mode == CascadeMode.Stop && errors.Count > 0)
+            if (mode == CascadeMode.Stop && errors.Count > 0)
             {
                 break;
             }
@@ -99,7 +99,11 @@ internal sealed class PropertyPipeline<T> : IPropertyPipeline
             }
             else if (rule is AsyncTokenFuncRule<T> asyncFuncRule)
             {
-                errors.AddRange(await asyncFuncRule.Evaluate(value, token));
+                var isValid = await asyncFuncRule.Evaluate(value, token);
+                if (!isValid)
+                {
+                    errors.Add(asyncFuncRule.MessageProvider);
+                }
             }
             else
             {

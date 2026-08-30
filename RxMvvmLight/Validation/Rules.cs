@@ -17,7 +17,9 @@ internal sealed class DebounceRule<T>(TimeSpan duration) : IRule<T>
 
 internal sealed class AsyncTokenFuncRule<T> : IRule<T>
 {
-    public required Func<T, CancellationToken, Task<string[]>> Evaluate { get; init; }
+    public required Func<T, CancellationToken, Task<bool>> Evaluate { get; init; }
+
+    public required Func<string> MessageProvider { get; init; }
 }
 
 internal sealed class ConditionalRule<T>(Func<T, bool> condition) : IRule<T>

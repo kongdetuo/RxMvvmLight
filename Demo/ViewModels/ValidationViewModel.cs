@@ -1,8 +1,10 @@
-using System;
-using System.Threading.Tasks;
+using Irihi.Lingua;
 using R3;
 using RxMvvmLight;
 using RxMvvmLight.Validation;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Demo.ViewModels;
 
@@ -61,18 +63,45 @@ public partial class ValidationViewModel : ValidationObservableObject, IActivata
     /// </summary>
     public RxCommand ValidatePhone { get; }
 
+
+    public IList<ILinguaManager> Managers { get; } =
+    [
+        LanguageManager.Instance,
+    ];
+    public LinguaCulture Culture { get; set => this.SetProperty(ref field, value); }
+
+
+
+    public void Foo<T>(T value)
+    {
+
+    }
+
     public ValidationViewModel()
     {
+        this.Foo(() => 1);
+
+        //LanguageManager.Instance.CultureChanges.ToObservable().Subscribe(_ =>
+        //{
+        //    // 这个不行，这个会先于具体资源触发, 还是 CultureChanged 事件靠谱
+        //    this.Validator.Update();
+        //});
+
+        MessageConverter.Register<IObservable<string?>>(x =>
+        {
+            return ((LinguaObservableString)x).CurrentValue!;
+        });
+
         // 1. 普通检查：同步规则，实时验证
         this.RuleFor(Name)
-            .Required("姓名不能为空")
-            .MinLength(3, "姓名至少{0}个字符")
+            .Required(LanguageManager.Instance.required)
+            .MinLength(3, LanguageManager.Instance.user_name_min_length)
             .Subscribe();
 
         // 2. 可空检查：有值时才验证格式
         this.RuleFor(Nickname)
             .When(n => n?.Length > 0)
-            .Must(n => n?.Length <= 12, "昵称最多12个字符")
+            .Must(n => n?.Length <= 12, ()=>$"昵称最多12个字符 当前字符数{Nickname?.Length ?? 0}")
             .Subscribe();
 
         // 3. 条件防抖：输入内容后才开始防抖

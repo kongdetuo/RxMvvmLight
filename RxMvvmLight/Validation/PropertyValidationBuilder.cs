@@ -52,19 +52,19 @@ public class PropertyValidationBuilder<T>
         return this;
     }
 
-    public PropertyValidationBuilder<T> RegisterRule(Func<T, string[]> evaluate)
+    public PropertyValidationBuilder<T> RegisterRule<TMessage>(Func<T, bool> evaluate, TMessage messageProvider)
     {
-        return RegisterAsyncRule((value, _) => Task.FromResult(evaluate(value)));
+        return RegisterAsyncRule((value, _) => Task.FromResult(evaluate(value)), messageProvider);
     }
 
-    public PropertyValidationBuilder<T> RegisterAsyncRule(Func<T, Task<string[]>> evaluate)
+    public PropertyValidationBuilder<T> RegisterAsyncRule<TMessage>(Func<T, Task<bool>> evaluate, TMessage messageProvider)
     {
-        return RegisterAsyncRule(async (value, token) => await evaluate(value));
+        return RegisterAsyncRule(async (value, token) => await evaluate(value), messageProvider);
     }
 
-    public PropertyValidationBuilder<T> RegisterAsyncRule(Func<T, CancellationToken, Task<string[]>> evaluate)
+    public PropertyValidationBuilder<T> RegisterAsyncRule<TMessage>(Func<T, CancellationToken, Task<bool>> evaluate, TMessage messageProvider)
     {
-        var rule = new AsyncTokenFuncRule<T> { Evaluate = evaluate };
+        var rule = new AsyncTokenFuncRule<T> { Evaluate = evaluate, MessageProvider = () => MessageConverter.Convert(messageProvider) };
         return AddRule(rule);
     }
 

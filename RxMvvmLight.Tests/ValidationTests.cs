@@ -436,7 +436,7 @@ public class ValidationTests
         new PropertyValidationBuilder<string>(validator, "Email", email)
             .Must(_ => true, "同步")
             .Debounce(300)
-            .RegisterAsyncRule(async _ => { await Task.Delay(10); evalCount++; return Array.Empty<string>(); })
+            .RegisterAsyncRule(async _ => { await Task.Delay(10); evalCount++; return true; }, "")
             .Subscribe();
 
         await Task.Delay(50);
@@ -463,8 +463,8 @@ public class ValidationTests
             {
                 rule2Start.TrySetResult();
                 await rule2Proceed.Task;
-                return new[] { "错误2" };
-            })
+                return false;
+            }, "错误2")
             .Subscribe();
 
         name.OnNext("");
