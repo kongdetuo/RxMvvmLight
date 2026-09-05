@@ -21,7 +21,7 @@ namespace Demo.ViewModels
 
         public HomeViewModel()
         {
-            this.GetObservable(Greeting)
+            this.ObserveChanged(x => x.Greeting)
                 .Subscribe(x =>
                 {
                     Debug.WriteLine(x);

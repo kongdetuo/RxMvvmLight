@@ -15,7 +15,7 @@ public class PropertyValidationBuilder<T>
     public PropertyValidationBuilder(ReactiveValidator validator, string propertyName, Observable<T> source)
     {
         this.Validator = validator;
-        this.PropertyName = Normalize(propertyName);
+        this.PropertyName = propertyName;
         this.source = source;
     }
 
@@ -96,14 +96,5 @@ public class PropertyValidationBuilder<T>
             rules.Add(rule);
         }
         return this;
-    }
-
-    private static string Normalize(string expression)
-    {
-        var arrow = expression.IndexOf("=>", StringComparison.Ordinal);
-        var rhs = arrow >= 0 ? expression[(arrow + 2)..] : expression;
-        rhs = rhs.Trim().TrimStart('(');
-        var index = rhs.LastIndexOf('.');
-        return (index >= 0 ? rhs[(index + 1)..] : rhs).Trim().TrimEnd('!', '?');
     }
 }

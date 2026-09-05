@@ -5,7 +5,7 @@ using R3;
 
 namespace RxMvvmLight.Validation;
 
-public interface IValidationObservableObject : IObservableObject, INotifyDataErrorInfo
+public interface IValidationObservableObject : INotifyDataErrorInfo
 {
     ReactiveValidator Validator { get; }
 }
@@ -29,13 +29,14 @@ public class ValidationObservableObject : ObservableObject, IValidationObservabl
             if (this.errorDisplayActivated)
             {
                 ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(errors.PropertyName));
-                OnPropertyChanged(HasErrors);
+                OnPropertyChanged(nameof(HasErrors));
             }
         });
 
         // 忽略注册验证器之前的变化
         this.Changed
-            .Where(p => Validator.ContainsProperty(p.PropertyName))
+            .Where(p => p.PropertyName != null)
+            .Where(p => Validator.ContainsProperty(p.PropertyName!))
             .Take(1).Subscribe(x =>
             {
                 this.errorDisplayActivated = true;
@@ -48,11 +49,12 @@ public static class ValidationObservableObjectExtensions
 {
     public static PropertyValidationBuilder<TValue> RuleFor<TVM, TValue>(
         this TVM viewModel,
-        TValue value,
-        [CallerArgumentExpression(nameof(value))] string propertyName = "")
-        where TVM : IValidationObservableObject, INotifyDataErrorInfo
+        Func<TVM, TValue> expression,
+        [CallerArgumentExpression(nameof(expression))] string propertyName = "")
+        where TVM : IValidationObservableObject, INotifyDataErrorInfo, INotifyPropertyChanged
     {
-        return new(viewModel.Validator, propertyName, viewModel.GetObservable(value, new Separator(), propertyName));
+        var name = RxMvvmLight.Helpers.PropertyNameHelper.ExtractNames(propertyName)[0];
+        return new(viewModel.Validator, name, viewModel.ObserveChanged(expression, propertyName));
     }
 
     public static PropertyValidationBuilder<TValue> RuleFor<TVM, TValue>(

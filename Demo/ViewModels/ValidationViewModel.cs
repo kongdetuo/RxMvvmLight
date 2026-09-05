@@ -93,19 +93,19 @@ public partial class ValidationViewModel : ValidationObservableObject, IActivata
         });
 
         // 1. 普通检查：同步规则，实时验证
-        this.RuleFor(Name)
+        this.RuleFor(x => x.Name)
             .Required(LanguageManager.Instance.required)
             .MinLength(3, LanguageManager.Instance.user_name_min_length)
             .Subscribe();
 
         // 2. 可空检查：有值时才验证格式
-        this.RuleFor(Nickname)
+        this.RuleFor(x => x.Nickname)
             .When(n => n?.Length > 0)
             .Must(n => n?.Length <= 12, ()=>$"昵称最多12个字符 当前字符数{Nickname?.Length ?? 0}")
             .Subscribe();
 
         // 3. 条件防抖：输入内容后才开始防抖
-        this.RuleFor(Email)
+        this.RuleFor(x => x.Email)
             .When(e => e?.Length > 0)
             .Debounce(300)
             .Email("邮箱格式不正确")
