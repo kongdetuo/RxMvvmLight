@@ -1,4 +1,5 @@
 using R3;
+using System.Runtime.CompilerServices;
 using System.Windows.Input;
 
 namespace RxMvvmLight;
@@ -17,28 +18,16 @@ public abstract class RxCommand : ICommand, IDisposable
 
     public abstract void Dispose();
 
-    public static RxCommand Create(Action action) =>
-        new RxCommand<object>(_ => { action(); return Task.CompletedTask; }, Observable.Return(true));
-
-    public static RxCommand Create(Action action, Observable<bool> canExecuteObservable) =>
+    public static RxCommand Create(Action action, Observable<bool>? canExecuteObservable = null) =>
         new RxCommand<object>(_ => { action(); return Task.CompletedTask; }, canExecuteObservable);
 
-    public static RxCommand Create(Func<Task> action) =>
-        new RxCommand<object>(_ => action(), Observable.Return(true));
-
-    public static RxCommand Create(Func<Task> action, Observable<bool> canExecuteObservable) =>
+    public static RxCommand Create(Func<Task> action, Observable<bool>? canExecuteObservable = null) =>
         new RxCommand<object>(_ => action(), canExecuteObservable);
 
-    public static RxCommand<T> Create<T>(Action<T> action) =>
-        new RxCommand<T>(obj => { action(obj); return Task.CompletedTask; }, Observable.Return(true));
-
-    public static RxCommand<T> Create<T>(Action<T> action, Observable<bool> canExecuteObservable) =>
+    public static RxCommand<T> Create<T>(Action<T> action, Observable<bool>? canExecuteObservable = null) =>
         new RxCommand<T>(obj => { action(obj); return Task.CompletedTask; }, canExecuteObservable);
 
-    public static RxCommand<T> Create<T>(Func<T, Task> action) =>
-        new RxCommand<T>(action, Observable.Return(true));
-
-    public static RxCommand<T> Create<T>(Func<T, Task> action, Observable<bool> canExecuteObservable) =>
+    public static RxCommand<T> Create<T>(Func<T, Task> action, Observable<bool>? canExecuteObservable = null) =>
         new RxCommand<T>(action, canExecuteObservable);
 }
 
@@ -47,16 +36,16 @@ public class RxCommand<T> : RxCommand
     private readonly Func<T, Task> execute;
     private readonly IDisposable dis;
     private bool canExecute;
-    private readonly Subject<bool> runningSubject = new();
+    private readonly BehaviorSubject<bool> runningSubject = new(false);
 
-    internal RxCommand(Func<T, Task> execute, Observable<bool> canExecuteObservable)
+    internal RxCommand(Func<T, Task> execute, Observable<bool>? canExecuteObservable)
     {
+        canExecuteObservable ??= Observable.Return(true);
+        canExecuteObservable = canExecuteObservable.Prepend(true); // 保证有一个初始值
         this.execute = execute;
-        this.dis = Observable.CombineLatest([IsRunning.Prepend(false), canExecuteObservable.Prepend(true)])
-            //.ObserveOnCurrentSynchronizationContext()
-            .Subscribe(p =>
+        this.dis = IsRunning.CombineLatest(canExecuteObservable, (isRunning, canExecute) => !isRunning && canExecute)
+            .Subscribe(can =>
             {
-                var can = !p[0] && p[1];
                 if (can != this.canExecute)
                 {
                     this.canExecute = can;
