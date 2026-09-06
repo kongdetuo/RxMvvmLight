@@ -1,6 +1,6 @@
 namespace RxMvvmLight.Validation;
 
-public enum ValidationState
+public enum ValidatorState
 {
     /// <summary>
     /// 初始值，尚未验证

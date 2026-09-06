@@ -15,7 +15,7 @@ public class ValidationTests
         validator.IsValid.Subscribe(v => isValid = v);
         validator.IsValidating.Subscribe(v => isValidating = v);
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .Must(n => !string.IsNullOrEmpty(n), "Name 不能为空")
             .Subscribe();
 
@@ -40,7 +40,7 @@ public class ValidationTests
         bool isValidating = false;
         validator.IsValidating.Subscribe(v => isValidating = v);
 
-        new PropertyValidationBuilder<string>(validator, "Email", email)
+        new PropertyValidatorBuilder<string>(validator, "Email", email)
             .Debounce(300)
             .MustAsync(async e =>
             {
@@ -68,7 +68,7 @@ public class ValidationTests
         bool isValid = true;
         validator.IsValid.Subscribe(v => isValid = v);
 
-        new PropertyValidationBuilder<string>(validator, "Email", email)
+        new PropertyValidatorBuilder<string>(validator, "Email", email)
             .MustAsync(async e =>
             {
                 if (e == "first")
@@ -100,7 +100,7 @@ public class ValidationTests
         var validator = new ReactiveValidator();
         var name = new BehaviorSubject<string>("");
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .Must(n => !string.IsNullOrEmpty(n), "必填")
             .Subscribe();
 
@@ -124,7 +124,7 @@ public class ValidationTests
         var email = new Subject<string>();
         int canceled = 0;
 
-        new PropertyValidationBuilder<string>(validator, "Email", email)
+        new PropertyValidatorBuilder<string>(validator, "Email", email)
             .MustAsync(async (e, ct) =>
             {
                 try
@@ -166,7 +166,7 @@ public class ValidationTests
             }
         });
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .Must(n => n.Length > 3, "太短")
             .Subscribe();
 
@@ -190,7 +190,7 @@ public class ValidationTests
         var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .Debounce(200)
             .Must(n => n.Length >= 3, "太短")
             .Subscribe();
@@ -216,33 +216,33 @@ public class ValidationTests
     {
         var validator = new ReactiveValidator();
         var name = new Subject<string>();
-        ValidationState? lastState = null;
+        ValidatorState? lastState = null;
         bool lastValidating = false;
         bool lastValid = false;
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .Debounce(200)
             .Must(n => n.Length >= 3, "太短")
             .Subscribe();
 
-        validator.GetState("Name").Subscribe(s => lastState = s);
-        validator.Validating("Name").Subscribe(v => lastValidating = v);
-        validator.Valid("Name").Subscribe(v => lastValid = v);
+        validator.ObserveState("Name").Subscribe(s => lastState = s);
+        validator.ObserveValidating("Name").Subscribe(v => lastValidating = v);
+        validator.ObserveValid("Name").Subscribe(v => lastValid = v);
 
-        Assert.Equal(ValidationState.NotValidated, lastState);
+        Assert.Equal(ValidatorState.NotValidated, lastState);
         Assert.False(lastValidating);
         Assert.False(lastValid);
 
         name.OnNext("");
         await Task.Delay(50);
-        Assert.Equal(ValidationState.Validating, lastState);
+        Assert.Equal(ValidatorState.Validating, lastState);
 
         await Task.Delay(400);
-        Assert.Equal(ValidationState.Invalid, lastState);
+        Assert.Equal(ValidatorState.Invalid, lastState);
 
         name.OnNext("abc");
         await Task.Delay(400);
-        Assert.Equal(ValidationState.Valid, lastState);
+        Assert.Equal(ValidatorState.Valid, lastState);
         Assert.False(lastValidating);
         Assert.True(lastValid);
     }
@@ -254,7 +254,7 @@ public class ValidationTests
          * 设计行为：对未注册的属性调用 GetState 应抛出异常
          */
         var validator = new ReactiveValidator();
-        Assert.Throws<InvalidOperationException>(() => validator.GetState("Name"));
+        Assert.Throws<InvalidOperationException>(() => validator.ObserveState("Name"));
     }
 
     [Fact]
@@ -266,14 +266,14 @@ public class ValidationTests
         var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .Must(n => n.Length >= 3, "太短")
             .Subscribe();
 
-        ValidationState? lastState = null;
-        validator.GetState("Name").Subscribe(s => lastState = s);
+        ValidatorState? lastState = null;
+        validator.ObserveState("Name").Subscribe(s => lastState = s);
 
-        Assert.Equal(ValidationState.NotValidated, lastState);
+        Assert.Equal(ValidatorState.NotValidated, lastState);
     }
 
     [Fact]
@@ -315,7 +315,7 @@ public class ValidationTests
         bool isValid = true;
         validator.IsValid.Subscribe(v => isValid = v);
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .Must(n => n == "boom" ? throw new InvalidOperationException("boom") : n.Length >= 3, "太短")
             .Subscribe();
 
@@ -342,7 +342,7 @@ public class ValidationTests
         var name = new Subject<string>();
         int evalCount = 0;
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .Must(_ => { evalCount++; return false; }, "第一")
             .Must(_ => { evalCount++; return false; }, "第二")
             .Must(_ => { evalCount++; return false; }, "第三")
@@ -360,7 +360,7 @@ public class ValidationTests
         var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .Must(_ => true, "第一")
             .Must(_ => false, "第二")
             .Must(_ => false, "第三")
@@ -378,7 +378,7 @@ public class ValidationTests
         var name = new Subject<string>();
         var order = new List<int>();
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .CascadeMode(CascadeMode.Continue)
             .Must(_ => { order.Add(1); return false; }, "第一")
             .Must(_ => { order.Add(2); return false; }, "第二")
@@ -397,7 +397,7 @@ public class ValidationTests
         var name = new Subject<string>();
         int group2Count = 0;
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .Must(_ => false, "失败")
             .CascadeMode(CascadeMode.Stop)
             .Must(_ => { group2Count++; return true; }, "不应执行")
@@ -415,7 +415,7 @@ public class ValidationTests
         var email = new Subject<string>();
         var order = new List<string>();
 
-        new PropertyValidationBuilder<string>(validator, "Email", email)
+        new PropertyValidatorBuilder<string>(validator, "Email", email)
             .Must(e => { order.Add("格式"); return false; }, "格式错")
             .MustAsync(async e => { await Task.Delay(10); order.Add("存在"); return true; }, "已存在")
             .Subscribe();
@@ -433,7 +433,7 @@ public class ValidationTests
         var email = new Subject<string>();
         int evalCount = 0;
 
-        new PropertyValidationBuilder<string>(validator, "Email", email)
+        new PropertyValidatorBuilder<string>(validator, "Email", email)
             .Must(_ => true, "同步")
             .Debounce(300)
             .RegisterAsyncRule(async _ => { await Task.Delay(10); evalCount++; return true; }, "")
@@ -456,7 +456,7 @@ public class ValidationTests
         var rule2Start = new TaskCompletionSource();
         var rule2Proceed = new TaskCompletionSource();
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .CascadeMode(CascadeMode.Continue)
             .Must(_ => false, "错误1")
             .RegisterAsyncRule(async _ =>
@@ -485,7 +485,7 @@ public class ValidationTests
         var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .Required("姓名不能为空")
             .Subscribe();
 
@@ -500,7 +500,7 @@ public class ValidationTests
         var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .Required("姓名不能为空")
             .Must(n => n.Length >= 3, "至少3个字符")
             .Subscribe();
@@ -515,7 +515,7 @@ public class ValidationTests
         var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .When(_ => true)
             .Must(n => n.Length >= 3, "至少3个字符")
             .Subscribe();
@@ -531,7 +531,7 @@ public class ValidationTests
         var validator = new ReactiveValidator();
         var name = new Subject<string>();
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .When(_ => false)
             .Must(n => n.Length >= 3, "至少3个字符")
             .Subscribe();
@@ -547,7 +547,7 @@ public class ValidationTests
         var name = new Subject<string>();
         bool condition = false;
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .When(_ => condition)
             .Must(n => n.Length >= 3, "至少3个字符")
             .Subscribe();
@@ -569,7 +569,7 @@ public class ValidationTests
         bool conditionA = true;
         bool conditionB = true;
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .When(_ => conditionA)
             .When(_ => conditionB)
             .Must(n => n.Length >= 3, "至少3个字符")
@@ -595,7 +595,7 @@ public class ValidationTests
         var name = new Subject<string>();
         var refresh = new BehaviorSubject<Unit>(Unit.Default);
 
-        new PropertyValidationBuilder<string>(validator, "Name", name)
+        new PropertyValidatorBuilder<string>(validator, "Name", name)
             .DependsOn(refresh)
             .Must(n => n.Length >= 3, "至少3个字符")
             .Subscribe();

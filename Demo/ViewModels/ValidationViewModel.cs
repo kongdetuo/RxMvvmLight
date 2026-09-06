@@ -127,7 +127,7 @@ public partial class ValidationViewModel : ValidationObservableObject, IActivata
             .Subscribe();
 
         // 异步验证 loading 状态
-        Validator.Validating(nameof(Phone))
+        Validator.ObserveValidating(nameof(Phone))
             .Subscribe(v => IsPhoneChecking = v)
             .DisposeWith(Activator);
 

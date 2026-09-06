@@ -1,4 +1,4 @@
-﻿namespace RxMvvmLight.Validation.Helpers;
+﻿namespace RxMvvmLight.Helpers;
 
 internal class WeakReferenceList<T>
     where T:class

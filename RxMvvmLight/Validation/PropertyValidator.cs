@@ -2,12 +2,12 @@ using R3;
 
 namespace RxMvvmLight.Validation;
 
-internal interface IPropertyPipeline : IDisposable
+internal interface IPropertyValidator : IDisposable
 {
     string PropertyName { get; }
 }
 
-internal sealed class PropertyPipeline<T> : IPropertyPipeline
+internal sealed class PropertyValidator<T> : IPropertyValidator
 {
     private readonly ReactiveValidator validator;
     private readonly object gate = new();
@@ -18,7 +18,7 @@ internal sealed class PropertyPipeline<T> : IPropertyPipeline
 
     public string PropertyName { get; }
 
-    internal PropertyPipeline(ReactiveValidator validator, string propertyName, Observable<T> source, List<IRule<T>> rules, CascadeMode cascadeMode)
+    internal PropertyValidator(ReactiveValidator validator, string propertyName, Observable<T> source, List<IRule<T>> rules, CascadeMode cascadeMode)
     {
         this.validator = validator;
         this.PropertyName = propertyName;
@@ -46,7 +46,7 @@ internal sealed class PropertyPipeline<T> : IPropertyPipeline
         return source
             .SelectAwait(async (value, ct) =>
             {
-                validator.SetState(PropertyName, ValidationState.Validating);
+                validator.SetState(PropertyName, ValidatorState.Validating);
                 try
                 {
                     return await Evaluate(rulesSnapshot, value, currentBehavior, ct);
@@ -63,7 +63,7 @@ internal sealed class PropertyPipeline<T> : IPropertyPipeline
             }, AwaitOperation.Switch)
             .Subscribe(errors =>
             {
-                validator.SetState(PropertyName, errors.Count == 0 ? ValidationState.Valid : ValidationState.Invalid);
+                validator.SetState(PropertyName, errors.Count == 0 ? ValidatorState.Valid : ValidatorState.Invalid);
                 validator.SetErrors(PropertyName, errors);
             });
     }

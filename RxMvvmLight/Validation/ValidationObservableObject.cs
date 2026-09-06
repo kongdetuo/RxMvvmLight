@@ -47,7 +47,7 @@ public class ValidationObservableObject : ObservableObject, IValidationObservabl
 
 public static class ValidationObservableObjectExtensions
 {
-    public static PropertyValidationBuilder<TValue> RuleFor<TVM, TValue>(
+    public static PropertyValidatorBuilder<TValue> RuleFor<TVM, TValue>(
         this TVM viewModel,
         Func<TVM, TValue> expression,
         [CallerArgumentExpression(nameof(expression))] string propertyName = "")
@@ -57,7 +57,7 @@ public static class ValidationObservableObjectExtensions
         return new(viewModel.Validator, name, viewModel.ObserveChanged(expression, propertyName));
     }
 
-    public static PropertyValidationBuilder<TValue> RuleFor<TVM, TValue>(
+    public static PropertyValidatorBuilder<TValue> RuleFor<TVM, TValue>(
         this TVM viewModel,
         Observable<TValue> observable,
         string propertyName)

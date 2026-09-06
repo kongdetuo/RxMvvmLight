@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 using R3;
-using RxMvvmLight.Validation.Helpers;
+using RxMvvmLight.Helpers;
 
 namespace RxMvvmLight.Validation;
 
@@ -8,13 +8,13 @@ public class ReactiveValidator : IDisposable
 {
     private sealed class PropertyState
     {
-        public IPropertyPipeline? Pipeline;
+        public required IPropertyValidator Validator;
 
         public IReadOnlyList<string> Errors = [];
 
-        public ValidationState State = ValidationState.NotValidated;
+        public ValidatorState State = ValidatorState.NotValidated;
 
-        public BehaviorSubject<ValidationState>? StateSubject;
+        public BehaviorSubject<ValidatorState>? StateSubject;
 
         public IReadOnlyList<Func<string>> ErrorProviders { get; internal set; } = [];
     }
@@ -50,30 +50,30 @@ public class ReactiveValidator : IDisposable
         }
     }
 
-    public Observable<ValidationState> GetState(string propertyName)
+    public Observable<ValidatorState> ObserveState(string propertyName)
     {
         lock (gate)
         {
             if (!properties.TryGetValue(propertyName, out var state))
                 throw new InvalidOperationException(
                     $"Property '{propertyName}' is not registered.");
-            state.StateSubject ??= new BehaviorSubject<ValidationState>(state.State);
+            state.StateSubject ??= new BehaviorSubject<ValidatorState>(state.State);
             return state.StateSubject;
         }
     }
 
-    public Observable<bool> Validating(string propertyName) =>
-        GetState(propertyName).Select(s => s == ValidationState.Validating);
+    public Observable<bool> ObserveValidating(string propertyName) =>
+        ObserveState(propertyName).Select(s => s == ValidatorState.Validating);
 
-    public Observable<bool> Valid(string propertyName) =>
-        GetState(propertyName).Select(s => s == ValidationState.Valid);
+    public Observable<bool> ObserveValid(string propertyName) =>
+        ObserveState(propertyName).Select(s => s == ValidatorState.Valid);
 
     public IReadOnlyList<string> GetInvalidProperties()
     {
         lock (gate)
         {
             return properties
-                .Where(p => p.Value.State == ValidationState.Invalid)
+                .Where(p => p.Value.State == ValidatorState.Invalid)
                 .Select(p => p.Key)
                 .ToList();
         }
@@ -81,6 +81,9 @@ public class ReactiveValidator : IDisposable
 
     public bool ContainsProperty(string propertyName)
     {
+        if(string.IsNullOrEmpty(propertyName))
+            return false;
+
         return properties.ContainsKey(propertyName);
     }
 
@@ -93,15 +96,17 @@ public class ReactiveValidator : IDisposable
             if (properties.ContainsKey(propertyName))
                 throw new InvalidOperationException(
                     $"Property '{propertyName}' is already registered. Use When() for conditional rules.");
-            var state = new PropertyState();
+            var state = new PropertyState
+            {
+                Validator = new PropertyValidator<T>(this, propertyName, source, rules, cascadeMode)
+            };
             properties[propertyName] = state;
-            state.Pipeline = new PropertyPipeline<T>(this, propertyName, source, rules, cascadeMode);
         }
     }
 
-    internal void SetState(string propertyName, ValidationState newState)
+    internal void SetState(string propertyName, ValidatorState newState)
     {
-        BehaviorSubject<ValidationState>? subject;
+        BehaviorSubject<ValidatorState>? subject;
         lock (gate)
         {
             var state = properties[propertyName];
@@ -120,8 +125,8 @@ public class ReactiveValidator : IDisposable
         bool validating, valid;
         lock (gate)
         {
-            validating = properties.Values.Any(p => p.State == ValidationState.Validating);
-            valid = properties.Values.All(p => p.State == ValidationState.Valid);
+            validating = properties.Values.Any(p => p.State == ValidatorState.Validating);
+            valid = properties.Values.All(p => p.State == ValidatorState.Valid);
         }
 
         lock (notifyGate)
@@ -170,7 +175,7 @@ public class ReactiveValidator : IDisposable
                     if (!errors.SequenceEqual(item.Errors))
                     {
                         item.Errors = errors;
-                        propertyErrors.Add(new PropertyErrors(item.Pipeline.PropertyName, item.Errors));
+                        propertyErrors.Add(new PropertyErrors(item.Validator.PropertyName, item.Errors));
                     }
                 }
             }
@@ -192,12 +197,12 @@ public class ReactiveValidator : IDisposable
     public void Dispose()
     {
         List<IDisposable> pipelinesToDispose;
-        List<BehaviorSubject<ValidationState>> subjects;
+        List<BehaviorSubject<ValidatorState>> subjects;
         lock (gate)
         {
             pipelinesToDispose = properties.Values
-                .Where(p => p.Pipeline is not null)
-                .Select(p => (IDisposable)p.Pipeline!)
+                .Where(p => p.Validator is not null)
+                .Select(p => (IDisposable)p.Validator!)
                 .ToList();
             subjects = properties.Values
                 .Where(p => p.StateSubject is not null)
