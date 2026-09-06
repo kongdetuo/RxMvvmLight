@@ -43,7 +43,7 @@ jobs:
         # 指定你的 csproj 路径：如果仓库根目录下只有一个项目可以用 "*.csproj"
         run: |
           mkdir -p nupkgs
-          dotnet pack ./RxMvvmLight/RxMvvmLight.csproj \
+          dotnet pack ./src/RxMvvmLight/RxMvvmLight.csproj \
             --configuration Release \
             --no-build \
             -o nupkgs \
