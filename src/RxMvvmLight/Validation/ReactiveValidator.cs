@@ -8,7 +8,7 @@ public class ReactiveValidator : IDisposable
 {
     private sealed class PropertyState
     {
-        public required IPropertyValidator Validator;
+        public IPropertyValidator Validator = null!;
 
         public IReadOnlyList<string> Errors = [];
 
@@ -81,7 +81,7 @@ public class ReactiveValidator : IDisposable
 
     public bool ContainsProperty(string propertyName)
     {
-        if(string.IsNullOrEmpty(propertyName))
+        if (string.IsNullOrEmpty(propertyName))
             return false;
 
         return properties.ContainsKey(propertyName);
@@ -96,11 +96,9 @@ public class ReactiveValidator : IDisposable
             if (properties.ContainsKey(propertyName))
                 throw new InvalidOperationException(
                     $"Property '{propertyName}' is already registered. Use When() for conditional rules.");
-            var state = new PropertyState
-            {
-                Validator = new PropertyValidator<T>(this, propertyName, source, rules, cascadeMode)
-            };
+            var state = new PropertyState();
             properties[propertyName] = state;
+            state.Validator = new PropertyValidator<T>(this, propertyName, source, rules, cascadeMode);
         }
     }
 
@@ -138,7 +136,7 @@ public class ReactiveValidator : IDisposable
 
     internal void SetErrors(string propertyName, IReadOnlyList<Func<string>> errors)
     {
-        var newErrors = errors.Select(p=>p()).ToList();
+        var newErrors = errors.Select(p => p()).ToList();
 
         lock (gate)
         {
@@ -169,7 +167,7 @@ public class ReactiveValidator : IDisposable
         {
             foreach (var item in properties.Values)
             {
-                if(item.Errors.Count > 0)
+                if (item.Errors.Count > 0)
                 {
                     var errors = item.ErrorProviders.Select(p => p()).ToArray();
                     if (!errors.SequenceEqual(item.Errors))
