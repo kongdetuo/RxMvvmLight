@@ -34,10 +34,10 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore ./src/
 
       - name: Build (Release)
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build ./src/ --configuration Release --no-restore
 
       - name: Pack project
         # 指定你的 csproj 路径：如果仓库根目录下只有一个项目可以用 "*.csproj"
