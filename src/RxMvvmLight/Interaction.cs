@@ -4,20 +4,8 @@ namespace RxMvvmLight;
 
 public sealed class Interaction<TIn, TOut> : IDisposable
 {
-    private sealed class Request
-    {
-        public Request(TIn input, TaskCompletionSource<TOut> completion)
-        {
-            Input = input;
-            Completion = completion;
-        }
-
-        public TIn Input { get; }
-
-        public TaskCompletionSource<TOut> Completion { get; }
-    }
-
-    private readonly List<Func<TIn, Task<TOut>>> handlers = new();
+    public delegate Task<TOut> HandlerWithPrevious(TIn input, Func<TIn, Task<TOut>> previousHandler);
+    private readonly List<Func<TIn, Task<TOut>>> handlers = [];
     private readonly Lock gate = new();
     private bool disposed;
 
@@ -28,8 +16,7 @@ public sealed class Interaction<TIn, TOut> : IDisposable
     {
         lock (gate)
         {
-            if (disposed)
-                throw new ObjectDisposedException(nameof(Interaction<TIn, TOut>));
+            ObjectDisposedException.ThrowIf(disposed, this);
             handlers.Add(handler);
         }
 
@@ -42,7 +29,32 @@ public sealed class Interaction<TIn, TOut> : IDisposable
         });
     }
 
-    public Task<TOut> Handle(TIn input)
+    public IDisposable RegisterHandler(HandlerWithPrevious handler)
+    {
+        Func<TIn, Task<TOut>> innerHandler = null!;
+
+        innerHandler = new Func<TIn, Task<TOut>>(async (input) =>
+        {
+            async Task<TOut> previous(TIn input)
+            {
+                Func<TIn, Task<TOut>> innerFallback = null!;
+                lock (gate)
+                {
+                    ObjectDisposedException.ThrowIf(disposed, this);
+
+                    var index = handlers.IndexOf(innerHandler);
+                    innerFallback = index > 0 ? handlers[index - 1] : throw new InvalidOperationException("没有回退 handler");
+                }
+                return await innerFallback(input);
+            }
+
+            return await handler(input, previous);
+        });
+
+        return RegisterHandler(innerHandler);
+    }
+
+    public async Task<TOut> Handle(TIn input)
     {
         Func<TIn, Task<TOut>> handler;
         lock (gate)
@@ -54,22 +66,7 @@ public sealed class Interaction<TIn, TOut> : IDisposable
             handler = handlers[^1];
         }
 
-        var tcs = new TaskCompletionSource<TOut>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _ = ProcessAsync(new Request(input, tcs), handler);
-        return tcs.Task;
-    }
-
-    private static async Task ProcessAsync(Request request, Func<TIn, Task<TOut>> handler)
-    {
-        try
-        {
-            var result = await handler(request.Input).ConfigureAwait(false);
-            request.Completion.TrySetResult(result);
-        }
-        catch (Exception ex)
-        {
-            request.Completion.TrySetException(ex);
-        }
+        return await handler(input);
     }
 
     public void Dispose()
