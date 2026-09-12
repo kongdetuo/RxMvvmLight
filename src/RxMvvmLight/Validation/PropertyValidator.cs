@@ -5,6 +5,7 @@ namespace RxMvvmLight.Validation;
 internal interface IPropertyValidator : IDisposable
 {
     string PropertyName { get; }
+    void Start();
 }
 
 internal sealed class PropertyValidator<T> : IPropertyValidator
@@ -25,6 +26,10 @@ internal sealed class PropertyValidator<T> : IPropertyValidator
         this.source = source;
         this.allRules = rules;
         this.cascadeMode = cascadeMode;
+    }
+
+    public void Start()
+    {
         subscription = BuildSubscription();
     }
 

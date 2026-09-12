@@ -8,7 +8,7 @@ public class ReactiveValidator : IDisposable
 {
     private sealed class PropertyState
     {
-        public IPropertyValidator Validator = null!;
+        public required IPropertyValidator Validator;
 
         public IReadOnlyList<string> Errors = [];
 
@@ -96,9 +96,13 @@ public class ReactiveValidator : IDisposable
             if (properties.ContainsKey(propertyName))
                 throw new InvalidOperationException(
                     $"Property '{propertyName}' is already registered. Use When() for conditional rules.");
-            var state = new PropertyState();
+            PropertyState state = new()
+            {
+                Validator = new PropertyValidator<T>(this, propertyName, source, rules, cascadeMode)
+            };
             properties[propertyName] = state;
-            state.Validator = new PropertyValidator<T>(this, propertyName, source, rules, cascadeMode);
+
+            state.Validator.Start();
         }
     }
 
