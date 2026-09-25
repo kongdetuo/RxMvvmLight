@@ -9,13 +9,15 @@ namespace Demo.Views
         protected override void OnLoaded(RoutedEventArgs e)
         {
             base.OnLoaded(e);
-            (DataContext as IActivatable)?.Activator.Activate();
+            if (DataContext is IHasLifecycle vm)
+                _ = vm.Lifecycle.ActivateAsync();
         }
 
         protected override void OnUnloaded(RoutedEventArgs e)
         {
             base.OnUnloaded(e);
-            (DataContext as IActivatable)?.Activator.Deactivate();
+            if (DataContext is IHasLifecycle vm)
+                _ = vm.Lifecycle.DeactivateAsync();
         }
     }
 }

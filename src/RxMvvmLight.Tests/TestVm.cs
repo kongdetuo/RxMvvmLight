@@ -43,12 +43,12 @@ internal sealed class SubVm : ObservableObject
     }
 }
 
-internal sealed class ActivatableVm : ObservableObject, IActivatable
+internal sealed class LifecycleVm : ObservableObject, IHasLifecycle
 {
-    public ViewModelActivator Activator => field ??= new();
+    public ViewModelLifecycle Lifecycle => field ??= new();
 }
 
-internal sealed class ActivatableValidationVm : ValidationObservableObject, IActivatable
+internal sealed class LifecycleValidationVm : ValidationObservableObject, IHasLifecycle
 {
-    public ViewModelActivator Activator => field ??= new();
+    public ViewModelLifecycle Lifecycle => field ??= new();
 }

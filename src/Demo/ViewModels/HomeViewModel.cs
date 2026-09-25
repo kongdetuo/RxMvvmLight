@@ -7,11 +7,9 @@ using System.Diagnostics;
 
 namespace Demo.ViewModels
 {
-    public partial class HomeViewModel : ValidationObservableObject, IActivatable
+    public partial class HomeViewModel : ValidationObservableObject, IHasLifecycle
     {
-        private ViewModelActivator? activator;
-
-        public ViewModelActivator Activator => activator ??= new();
+        public ViewModelLifecycle Lifecycle => field ??= new();
 
         public string Greeting { get; set => this.SetProperty(ref field, value); } = "Welcome to Avalonia!";
 
@@ -32,13 +30,13 @@ namespace Demo.ViewModels
             //    .Must(p => p.Length > 0, "不可为空")
             //    .Subscribe();
 
-            //this.WhenFirstActivated(() => Log.Add("首次激活：开始加载首页数据"));
-            //this.WhenActivated(() => Log.Add("激活（每次进入页面）"));
-            //this.WhenDeactivated(() => Log.Add("失活（离开页面）"));
+            //this.WhenInitialize(() => Log.Add("首次激活：开始加载首页数据"));
+            //this.WhenActivate(() => Log.Add("激活（每次进入页面）"));
+            //this.WhenDeactivate(() => Log.Add("失活（离开页面）"));
 
             //Observable.Interval(TimeSpan.FromSeconds(1))
             //    .Subscribe(_ => Ticks++)
-            //    .DisposeWhenDeactivated(Activator);
+            //    .DisposeWithDeactivate(Lifecycle);
         }
     }
 }

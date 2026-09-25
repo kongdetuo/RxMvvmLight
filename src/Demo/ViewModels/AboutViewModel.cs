@@ -3,11 +3,9 @@ using System.Collections.ObjectModel;
 
 namespace Demo.ViewModels
 {
-    public partial class AboutViewModel : ObservableObject, IActivatable
+    public partial class AboutViewModel : ObservableObject, IHasLifecycle
     {
-        private ViewModelActivator? activator;
-
-        public ViewModelActivator Activator => activator ??= new();
+        public ViewModelLifecycle Lifecycle => field ??= new();
 
         public Interaction<string, bool> Confirm { get; } = new();
 
@@ -24,9 +22,9 @@ namespace Demo.ViewModels
                 Log.Add($"VM: 收到结果 = {ok}");
             });
 
-            this.WhenFirstActivated(() => Log.Add("首次激活：加载关于信息"));
-            this.WhenActivated(() => Log.Add("激活（每次进入页面）"));
-            this.WhenDeactivated(() => Log.Add("失活（离开页面）"));
+            this.WhenInitialize(() => Log.Add("首次激活：加载关于信息"));
+            this.WhenActivate(() => Log.Add("激活（每次进入页面）"));
+            this.WhenDeactivate(() => Log.Add("失活（离开页面）"));
         }
     }
 }

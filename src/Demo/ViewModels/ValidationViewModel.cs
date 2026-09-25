@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace Demo.ViewModels;
 
-public partial class ValidationViewModel : ValidationObservableObject, IActivatable
+public partial class ValidationViewModel : ValidationObservableObject, IHasLifecycle
 {
-    public ViewModelActivator Activator { get; } = new();
+    public ViewModelLifecycle Lifecycle { get; } = new();
 
     /// <summary>
     /// 普通检查：Required + MinLength，实时验证
@@ -128,8 +128,7 @@ public partial class ValidationViewModel : ValidationObservableObject, IActivata
 
         // 异步验证 loading 状态
         Validator.ObserveValidating(nameof(Phone))
-            .Subscribe(v => IsPhoneChecking = v)
-            .DisposeWith(Activator);
+            .Subscribe(v => IsPhoneChecking = v);
 
 
 
