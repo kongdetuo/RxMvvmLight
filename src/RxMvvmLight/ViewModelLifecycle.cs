@@ -142,19 +142,9 @@ public static class LifecycleExtensions
     {
         public IDisposable DisposeWith(IAsyncSignal signal)
         {
-            // 取消订阅这个动作本身也是一个订阅
-            // 这里让这个订阅完成任务后取消自身
-            IDisposable? disposable = null;
-            disposable = signal.Subscribe(() =>
+            signal.SubscribeOnce(() =>
             {
-                try
-                {
-                    self.Dispose();
-                }
-                finally
-                {
-                    disposable?.Dispose();  // 如果某 IAsyncSignal 允许订阅时执行，这里就是null
-                }
+                self.Dispose();
                 return ValueTask.CompletedTask;
             });
 
@@ -182,20 +172,7 @@ public static class LifecycleExtensions
     {
         public IAsyncDisposable DisposeWith(IAsyncSignal signal)
         {
-            // 取消订阅这个动作本身也是一个订阅
-            // 这里让这个订阅完成任务后取消自身
-            IDisposable? disposable = null; 
-            disposable = signal.Subscribe(async () =>
-            {
-                try
-                {
-                    await self.DisposeAsync();
-                }
-                finally
-                {
-                    disposable?.Dispose(); // 如果某 IAsyncSignal 允许订阅时执行，这里就是null
-                }
-            });
+            signal.SubscribeOnce(self.DisposeAsync);
 
             // 返回原始 IDisposable 方便链式挂载到其他触发源。
             return self;

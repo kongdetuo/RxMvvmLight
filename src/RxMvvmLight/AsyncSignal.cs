@@ -54,3 +54,19 @@ internal class AsyncSignal : IAsyncSignal
         }
     }
 }
+public static class AsyncSignalExtensions
+{
+    extension(IAsyncSignal self)
+    {
+        public IDisposable SubscribeOnce(Func<ValueTask> handler)
+        {
+            IDisposable? disposable = null;
+            disposable = self.Subscribe(async () =>
+            {
+                disposable?.Dispose();
+                await handler();
+            });
+            return disposable;
+        }
+    }
+}
