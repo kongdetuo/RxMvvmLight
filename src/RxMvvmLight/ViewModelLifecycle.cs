@@ -144,7 +144,7 @@ public static class LifecycleExtensions
         {
             // 取消订阅这个动作本身也是一个订阅
             // 这里让这个订阅完成任务后取消自身
-            IDisposable disposable = null!;
+            IDisposable? disposable = null;
             disposable = signal.Subscribe(() =>
             {
                 try
@@ -153,7 +153,7 @@ public static class LifecycleExtensions
                 }
                 finally
                 {
-                    disposable.Dispose();
+                    disposable?.Dispose();  // 如果某 IAsyncSignal 允许订阅时执行，这里就是null
                 }
                 return ValueTask.CompletedTask;
             });
@@ -184,7 +184,7 @@ public static class LifecycleExtensions
         {
             // 取消订阅这个动作本身也是一个订阅
             // 这里让这个订阅完成任务后取消自身
-            IDisposable disposable = null!;
+            IDisposable? disposable = null; 
             disposable = signal.Subscribe(async () =>
             {
                 try
@@ -193,7 +193,7 @@ public static class LifecycleExtensions
                 }
                 finally
                 {
-                    disposable.Dispose();
+                    disposable?.Dispose(); // 如果某 IAsyncSignal 允许订阅时执行，这里就是null
                 }
             });
 
