@@ -63,7 +63,7 @@ public static class AsyncSignalExtensions
             IDisposable? disposable = null;
             disposable = self.Subscribe(async () =>
             {
-                disposable?.Dispose();
+                disposable?.Dispose(); // 如果某个 IAsyncSignal 实现允许订阅时直接触发，那这里就有可能是null
                 await handler();
             });
             return disposable;
