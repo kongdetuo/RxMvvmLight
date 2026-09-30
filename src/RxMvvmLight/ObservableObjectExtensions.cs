@@ -9,7 +9,7 @@ public static class ObservableObjectExtensions
 {
     extension<TVM>(TVM vm) where TVM : INotifyPropertyChanged
     {
-        internal Observable<PropertyChangedEventArgs> Changed =>
+        public Observable<PropertyChangedEventArgs> Changed =>
             Observable.FromEvent<PropertyChangedEventHandler, PropertyChangedEventArgs>(
                  h => (sender, e) => h(e),
                  h => vm.PropertyChanged += h,
@@ -30,7 +30,7 @@ public static class ObservableObjectExtensions
 
     extension<TVM>(TVM vm) where TVM : INotifyPropertyChanging
     {
-        internal Observable<PropertyChangingEventArgs> Changing =>
+        public Observable<PropertyChangingEventArgs> Changing =>
             Observable.FromEvent<PropertyChangingEventHandler, PropertyChangingEventArgs>(
                  h => (sender, e) => h(e),
                  h => vm.PropertyChanging += h,

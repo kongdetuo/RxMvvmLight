@@ -10,30 +10,16 @@ public class ObservableObject : INotifyPropertyChanging, INotifyPropertyChanged
 
     PropertyChangedEventHandler? propertyChangedEventHandler;
 
-    event PropertyChangedEventHandler? INotifyPropertyChanged.PropertyChanged
+    public event PropertyChangedEventHandler? PropertyChanged
     {
-        add
-        {
-            propertyChangedEventHandler += value;
-        }
-
-        remove
-        {
-            propertyChangedEventHandler -= value;
-        }
+        add => propertyChangedEventHandler += value;
+        remove => propertyChangedEventHandler -= value;
     }
 
-    event PropertyChangingEventHandler? INotifyPropertyChanging.PropertyChanging
+    public event PropertyChangingEventHandler? PropertyChanging
     {
-        add
-        {
-            propertyChangingEventHandler += value;
-        }
-
-        remove
-        {
-            propertyChangingEventHandler -= value;
-        }
+        add => propertyChangingEventHandler += value;
+        remove => propertyChangingEventHandler -= value;
     }
 
     protected void OnPropertyChanging([CallerMemberName] string propertyName = "")
