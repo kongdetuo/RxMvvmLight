@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 namespace RxMvvmLight.Validation;
 
 public static class MessageConverter
@@ -36,7 +34,7 @@ public static class MessageConverter
     {
         if(ConverterRegistry<T>.Converter == null)
         {
-            throw new InvalidOperationException($"No message converter registered for type '{nameof(T)}'.");
+            throw new InvalidOperationException($"No message converter registered for type '{typeof(T)}'.");
         }
         return ConverterRegistry<T>.Converter(value);
     }
