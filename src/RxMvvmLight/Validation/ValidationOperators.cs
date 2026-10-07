@@ -59,27 +59,27 @@ public static class ValidationOperators
 
     extension<T>(PropertyValidatorBuilder<T> builder) where T : IComparable<T>
     {
-        public PropertyValidatorBuilder<T> GreaterThan<TMessage>(T min, string message)
+        public PropertyValidatorBuilder<T> GreaterThan<TMessage>(T min, TMessage message)
         {
             return builder.Must(v => v is not null && v.CompareTo(min) > 0, message);
         }
 
-        public PropertyValidatorBuilder<T> GreaterThanOrEqual<TMessage>(T min, string message)
+        public PropertyValidatorBuilder<T> GreaterThanOrEqual<TMessage>(T min, TMessage message)
         {
             return builder.Must(v => v is not null && v.CompareTo(min) >= 0, message);
         }
 
-        public PropertyValidatorBuilder<T> LessThan<TMessage>(T max, string message)
+        public PropertyValidatorBuilder<T> LessThan<TMessage>(T max, TMessage message)
         {
             return builder.Must(v => v is not null && v.CompareTo(max) < 0, message);
         }
 
-        public PropertyValidatorBuilder<T> LessThanOrEqual<TMessage>(T max, string message)
+        public PropertyValidatorBuilder<T> LessThanOrEqual<TMessage>(T max, TMessage message)
         {
             return builder.Must(v => v is not null && v.CompareTo(max) <= 0, message);
         }
 
-        public PropertyValidatorBuilder<T> Between<TMessage>(T min, T max, string message)
+        public PropertyValidatorBuilder<T> Between<TMessage>(T min, T max, TMessage message)
         {
             return builder.Must(v => v is not null && v.CompareTo(min) >= 0 && v.CompareTo(max) <= 0, message);
         }
