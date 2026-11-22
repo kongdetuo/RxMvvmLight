@@ -229,7 +229,7 @@ LifecycleState state = vm.Lifecycle.State;
 - `ActivateAsync(ensureInitialized: true)` 会在需要时自动完成初始化。
 - `Initialize` / `Activate` 等信号按语义只触发一次或每次触发一次，重复调用会去重。
 - 状态只有在所有 handler 执行完成后才推进；并发调用会按调用顺序串行化。
-- `WhenInitialize / WhenActivate / WhenDeactivate / WhenDestroy` 返回 `IDisposable`，可取消订阅。
+- `WhenInitialize / WhenActivate / WhenDeactivate / WhenDestroy` 返回 `IDisposable`，可取消订阅；同步回调用 `Action`，异步回调用 `Func<Task>`。
 - `DisposeWith` / `DisposeWithDeactivate` / `DisposeWithDestroy` 可把任意 `IDisposable` / `IAsyncDisposable` 挂接到相应信号上自动释放。
 
 View 侧挂接（示例中的 `ActivatableView`）：

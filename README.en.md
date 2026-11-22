@@ -229,7 +229,7 @@ LifecycleState state = vm.Lifecycle.State;
 - `ActivateAsync(ensureInitialized: true)` performs initialization when required.
 - `Initialize` / `Activate` signals fire once, or once per occurrence depending on semantics; repeated calls are de-duplicated.
 - State advances only after all handlers complete; concurrent calls are serialized in call order.
-- `WhenInitialize / WhenActivate / WhenDeactivate / WhenDestroy` return `IDisposable` so subscriptions can be cancelled.
+- `WhenInitialize / WhenActivate / WhenDeactivate / WhenDestroy` return `IDisposable` so subscriptions can be cancelled; use `Action` for synchronous handlers and `Func<Task>` for asynchronous ones.
 - `DisposeWith` / `DisposeWithDeactivate` / `DisposeWithDestroy` attach any `IDisposable` / `IAsyncDisposable` to the matching signal for automatic disposal.
 
 View integration (the demo's `ActivatableView`):

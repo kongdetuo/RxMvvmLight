@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	  <VersionPrefix>0.3.1</VersionPrefix>
+	  <VersionPrefix>0.4.0</VersionPrefix>
 	  <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <Authors>kongdetuo</Authors>
     <Company />

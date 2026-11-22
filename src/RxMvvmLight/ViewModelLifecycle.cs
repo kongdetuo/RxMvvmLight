@@ -110,29 +110,29 @@ public static class LifecycleExtensions
         public IDisposable WhenInitialize(Action action)
             => self.Lifecycle.Initializing.Subscribe(action);
 
-        public IDisposable WhenInitialize(Func<ValueTask> action)
-            => self.Lifecycle.Initializing.Subscribe(action);
+        public IDisposable WhenInitialize(Func<Task> action)
+            => self.Lifecycle.Initializing.Subscribe(() => new ValueTask(action()));
 
 
         public IDisposable WhenActivate(Action action)
             => self.Lifecycle.Activating.Subscribe(action);
 
-        public IDisposable WhenActivate(Func<ValueTask> action)
-            => self.Lifecycle.Activating.Subscribe(action);
+        public IDisposable WhenActivate(Func<Task> action)
+            => self.Lifecycle.Activating.Subscribe(() => new ValueTask(action()));
 
 
         public IDisposable WhenDeactivate(Action action)
             => self.Lifecycle.Deactivating.Subscribe(action);
 
-        public IDisposable WhenDeactivate(Func<ValueTask> action)
-            => self.Lifecycle.Deactivating.Subscribe(action);
+        public IDisposable WhenDeactivate(Func<Task> action)
+            => self.Lifecycle.Deactivating.Subscribe(() => new ValueTask(action()));
 
 
         public IDisposable WhenDestroy(Action action)
             => self.Lifecycle.Destroying.Subscribe(action);
 
-        public IDisposable WhenDestroy(Func<ValueTask> action)
-            => self.Lifecycle.Destroying.Subscribe(action);
+        public IDisposable WhenDestroy(Func<Task> action)
+            => self.Lifecycle.Destroying.Subscribe(() => new ValueTask(action()));
 
     }
 

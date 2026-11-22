@@ -435,6 +435,52 @@ public class ViewModelLifecycleTests
     }
 
     [Fact]
+    public async Task WhenInitialize_TaskMethodGroup_IsAwaited()
+    {
+        var vm = new LifecycleVm();
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var started = false;
+
+        Task Handler()
+        {
+            started = true;
+            return gate.Task;
+        }
+
+        vm.WhenInitialize(Handler);
+
+        var initialize = vm.Lifecycle.InitializeAsync();
+
+        Assert.True(started);
+        Assert.False(initialize.IsCompleted);
+
+        gate.SetResult();
+        await initialize;
+    }
+
+    [Fact]
+    public async Task WhenInitialize_TaskReturningLambda_IsAwaited()
+    {
+        var vm = new LifecycleVm();
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var started = false;
+
+        vm.WhenInitialize(() =>
+        {
+            started = true;
+            return gate.Task;
+        });
+
+        var initialize = vm.Lifecycle.InitializeAsync();
+
+        Assert.True(started);
+        Assert.False(initialize.IsCompleted);
+
+        gate.SetResult();
+        await initialize;
+    }
+
+    [Fact]
     public async Task WhenDeactivate_FiresOnlyOnDeactivation()
     {
         var vm = new LifecycleVm();
