@@ -9,7 +9,7 @@ public interface IAsyncSignal
     IDisposable Subscribe(Func<ValueTask> action);
 }
 
-internal class AsyncSignal : IAsyncSignal
+public sealed class AsyncSignal : IAsyncSignal
 {
     private readonly Lock gate = new();
     private readonly List<Func<ValueTask>> handlers = [];
