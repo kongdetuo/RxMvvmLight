@@ -1,5 +1,3 @@
-using RxMvvmLight.Helpers;
-
 namespace RxMvvmLight;
 
 /// <summary>
@@ -20,11 +18,11 @@ public static class ActivatableViewExtensions
     {
         public IDisposable WhenActivated(Action action, bool once = false)
             => once
-                ? self.Activated.SubscribeOnce(action.AsValueTask())
-                : self.Activated.Subscribe(action.AsValueTask());
+                ? self.Activated.SubscribeOnce(action)
+                : self.Activated.Subscribe(action);
 
         public IDisposable WhenDeactivated(Action action)
-            => self.Deactivated.Subscribe(action.AsValueTask());
+            => self.Deactivated.Subscribe(action);
     }
 
     extension(IDisposable self)

@@ -235,20 +235,56 @@ LifecycleState state = vm.Lifecycle.State;
 View 侧挂接（示例中的 `ActivatableView`）：
 
 ```csharp
-protected override void OnLoaded(RoutedEventArgs e)
+public abstract class ActivatableView : UserControl, IActivatableView
 {
-    base.OnLoaded(e);
-    if (DataContext is IHasLifecycle vm)
-        _ = vm.Lifecycle.ActivateAsync();
-}
+    private readonly AsyncSignal _activated = new();
+    private readonly AsyncSignal _deactivated = new();
 
-protected override void OnUnloaded(RoutedEventArgs e)
-{
-    base.OnUnloaded(e);
-    if (DataContext is IHasLifecycle vm)
-        _ = vm.Lifecycle.DeactivateAsync();
+    // 显式实现，避免与平台自带的 Activated / Deactivated 事件撞名
+    IAsyncSignal IActivatableView.Activated => _activated;
+    IAsyncSignal IActivatableView.Deactivated => _deactivated;
+
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        _ = ActivateAsync();
+    }
+
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+        _ = DeactivateAsync();
+    }
+
+    private async Task ActivateAsync()
+    {
+        if (DataContext is IHasLifecycle vm)
+            await vm.Lifecycle.ActivateAsync();
+        await _activated.InvokeAsync();
+    }
+
+    private async Task DeactivateAsync()
+    {
+        await _deactivated.InvokeAsync();
+        if (DataContext is IHasLifecycle vm)
+            await vm.Lifecycle.DeactivateAsync();
+    }
 }
 ```
+
+`IActivatableView` 让 View 也拥有自己的激活/失活时机，用法与 VM 一致：
+
+```csharp
+this.WhenActivated(() => { /* 每次进入页面 */ });
+this.WhenActivated(() => { /* 订阅后的下一次激活，执行一次后自动退订 */ }, once: true);
+this.WhenDeactivated(() => { /* 每次离开页面 */ });
+
+someSubscription.DisposeWithDeactivate(this);
+```
+
+`WhenActivated` / `WhenDeactivated` 只提供同步 `Action` 重载；`once: true` 表示「订阅后的下一次激活执行一次，然后自动退订」，等价于内建的 `SubscribeOnce`，并不代表生命周期意义上的「第一次激活」。`WhenDeactivated` 没有 `once` 参数。
+
+示例里激活时先推进 VM 生命周期再触发 `Activated`，失活时先触发 `Deactivated` 再失活 VM，形成嵌套的清理顺序。
 
 ## Validation
 

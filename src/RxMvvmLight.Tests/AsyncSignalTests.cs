@@ -89,6 +89,58 @@ public class AsyncSignalTests
     }
 
     [Fact]
+    public async Task Subscribe_Action_InvokesHandler()
+    {
+        var signal = new AsyncSignal();
+        var count = 0;
+        signal.Subscribe(() => count++);
+
+        await signal.InvokeAsync();
+
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public async Task Subscribe_Action_DisposeDetachesHandler()
+    {
+        var signal = new AsyncSignal();
+        var count = 0;
+        var subscription = signal.Subscribe(() => count++);
+
+        await signal.InvokeAsync();
+        subscription.Dispose();
+        await signal.InvokeAsync();
+
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public async Task SubscribeOnce_Action_FiresOnlyOnce()
+    {
+        var signal = new AsyncSignal();
+        var count = 0;
+        signal.SubscribeOnce(() => count++);
+
+        await signal.InvokeAsync();
+        await signal.InvokeAsync();
+
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public async Task SubscribeOnce_Action_DisposedBeforeInvoke_DoesNotFire()
+    {
+        var signal = new AsyncSignal();
+        var count = 0;
+        var subscription = signal.SubscribeOnce(() => count++);
+        subscription.Dispose();
+
+        await signal.InvokeAsync();
+
+        Assert.Equal(0, count);
+    }
+
+    [Fact]
     public async Task Subscribe_DisposeTwice_DoesNotThrow()
     {
         var signal = new AsyncSignal();

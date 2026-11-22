@@ -1,6 +1,4 @@
-﻿using RxMvvmLight.Helpers;
-
-namespace RxMvvmLight;
+﻿namespace RxMvvmLight;
 
 public enum LifecycleState
 {
@@ -110,28 +108,28 @@ public static class LifecycleExtensions
     extension(IHasLifecycle self)
     {
         public IDisposable WhenInitialize(Action action)
-            => self.WhenInitialize(action.AsValueTask());
+            => self.Lifecycle.Initializing.Subscribe(action);
 
         public IDisposable WhenInitialize(Func<ValueTask> action)
             => self.Lifecycle.Initializing.Subscribe(action);
 
 
         public IDisposable WhenActivate(Action action)
-            => self.WhenActivate(action.AsValueTask());
+            => self.Lifecycle.Activating.Subscribe(action);
 
         public IDisposable WhenActivate(Func<ValueTask> action)
             => self.Lifecycle.Activating.Subscribe(action);
 
 
         public IDisposable WhenDeactivate(Action action)
-            => self.WhenDeactivate(action.AsValueTask());
+            => self.Lifecycle.Deactivating.Subscribe(action);
 
         public IDisposable WhenDeactivate(Func<ValueTask> action)
             => self.Lifecycle.Deactivating.Subscribe(action);
 
 
         public IDisposable WhenDestroy(Action action)
-            => self.WhenDestroy(action.AsValueTask());
+            => self.Lifecycle.Destroying.Subscribe(action);
 
         public IDisposable WhenDestroy(Func<ValueTask> action)
             => self.Lifecycle.Destroying.Subscribe(action);
@@ -142,11 +140,7 @@ public static class LifecycleExtensions
     {
         public IDisposable DisposeWith(IAsyncSignal signal)
         {
-            signal.SubscribeOnce(() =>
-            {
-                self.Dispose();
-                return ValueTask.CompletedTask;
-            });
+            signal.SubscribeOnce(self.Dispose);
 
             // 返回原始 IDisposable 方便链式挂载到其他触发源。
             return self;

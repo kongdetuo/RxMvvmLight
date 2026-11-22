@@ -1,5 +1,4 @@
 ﻿using R3;
-using RxMvvmLight.Helpers;
 
 namespace RxMvvmLight;
 
@@ -58,6 +57,24 @@ public static class AsyncSignalExtensions
 {
     extension(IAsyncSignal self)
     {
+        public IDisposable Subscribe(Action action)
+        {
+            return self.Subscribe(() =>
+            {
+                action();
+                return ValueTask.CompletedTask;
+            });
+        }
+
+        public IDisposable SubscribeOnce(Action action)
+        {
+            return self.SubscribeOnce(() =>
+            {
+                action();
+                return ValueTask.CompletedTask;
+            });
+        }
+
         public IDisposable SubscribeOnce(Func<ValueTask> handler)
         {
             IDisposable? disposable = null;

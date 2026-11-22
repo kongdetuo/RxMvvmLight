@@ -235,20 +235,56 @@ LifecycleState state = vm.Lifecycle.State;
 View integration (the demo's `ActivatableView`):
 
 ```csharp
-protected override void OnLoaded(RoutedEventArgs e)
+public abstract class ActivatableView : UserControl, IActivatableView
 {
-    base.OnLoaded(e);
-    if (DataContext is IHasLifecycle vm)
-        _ = vm.Lifecycle.ActivateAsync();
-}
+    private readonly AsyncSignal _activated = new();
+    private readonly AsyncSignal _deactivated = new();
 
-protected override void OnUnloaded(RoutedEventArgs e)
-{
-    base.OnUnloaded(e);
-    if (DataContext is IHasLifecycle vm)
-        _ = vm.Lifecycle.DeactivateAsync();
+    // Explicit implementation avoids clashing with platform Activated / Deactivated events
+    IAsyncSignal IActivatableView.Activated => _activated;
+    IAsyncSignal IActivatableView.Deactivated => _deactivated;
+
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        _ = ActivateAsync();
+    }
+
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+        _ = DeactivateAsync();
+    }
+
+    private async Task ActivateAsync()
+    {
+        if (DataContext is IHasLifecycle vm)
+            await vm.Lifecycle.ActivateAsync();
+        await _activated.InvokeAsync();
+    }
+
+    private async Task DeactivateAsync()
+    {
+        await _deactivated.InvokeAsync();
+        if (DataContext is IHasLifecycle vm)
+            await vm.Lifecycle.DeactivateAsync();
+    }
 }
 ```
+
+`IActivatableView` gives the View its own activation/deactivation hooks, mirroring the ViewModel:
+
+```csharp
+this.WhenActivated(() => { /* each time the page is entered */ });
+this.WhenActivated(() => { /* the next activation after subscribing, then auto-unsubscribe */ }, once: true);
+this.WhenDeactivated(() => { /* each time the page is left */ });
+
+someSubscription.DisposeWithDeactivate(this);
+```
+
+`WhenActivated` / `WhenDeactivated` only expose a synchronous `Action` overload; `once: true` means "run on the next activation after subscribing, then auto-unsubscribe", equivalent to the built-in `SubscribeOnce`. It is not a lifecycle-level "first activation" guarantee. `WhenDeactivated` has no `once` parameter.
+
+In the demo, activation advances the ViewModel first and then raises `Activated`; deactivation raises `Deactivated` first and then deactivates the ViewModel, giving a nested cleanup order.
 
 ## Validation
 
